@@ -516,7 +516,7 @@ export default function App() {
       </main>
 
       <footer className="max-w-4xl mx-auto px-4 py-12 text-center text-slate-400 text-xs">
-        <p>© 2026 CCCD Reader AI - Powered by Gemini 3.0 Flash</p>
+        <p>© 2026 CCCD Reader AI - Powered by TuanMinh</p>
       </footer>
     </div>
   );
