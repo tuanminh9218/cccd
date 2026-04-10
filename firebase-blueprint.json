@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "CCCDInfo": {
+      "title": "CCCD Information",
+      "description": "Information extracted from CCCD or manually entered.",
+      "type": "object",
+      "properties": {
+        "idNumber": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "fullName": { "type": "string" },
+        "dateOfBirth": { "type": "string" },
+        "gender": { "type": "string" },
+        "permanentResidence": { "type": "string" },
+        "userId": { "type": "string", "description": "The UID of the user who owns this record." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "userId"]
+    }
+  },
+  "firestore": {
+    "/results/{resultId}": {
+      "schema": "CCCDInfo",
+      "description": "Collection of extracted medical/CCCD results."
+    }
+  }
+}

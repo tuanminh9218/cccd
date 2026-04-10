@@ -1,4 +1,5 @@
 export interface CCCDInfo {
+  id?: string;
   idNumber: string;
   issueDate: string;
   fullName: string;

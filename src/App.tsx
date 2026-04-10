@@ -18,6 +18,7 @@ import {
   AlertCircle,
   X,
   Download,
+  Eye,
   Camera,
   Edit3,
   Save,
@@ -51,10 +52,86 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CCCDInfo } from './types';
+import { auth, db } from './firebase';
+import { 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  where, 
+  orderBy, 
+  serverTimestamp,
+  getDocFromServer,
+  setDoc,
+  getDoc
+} from 'firebase/firestore';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 export default function App() {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<CCCDInfo[]>([]);
@@ -73,6 +150,7 @@ export default function App() {
   const [selectedLogo, setSelectedLogo] = useState<string | null>(null);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const [showMedicalForm, setShowMedicalForm] = useState(false);
+  const [globalLogo, setGlobalLogo] = useState<string | null>(null);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState<number | null>(null);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isManualFormOpen, setIsManualFormOpen] = useState(false);
@@ -85,11 +163,77 @@ export default function App() {
   const [provinceSearch, setProvinceSearch] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
   const [isEditingForm, setIsEditingForm] = useState(false);
+  
+  // Firebase Auth Listener
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Firestore Sync
+  React.useEffect(() => {
+    if (!user) {
+      setResults([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'results'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as (CCCDInfo & { id: string })[];
+      
+      setResults(docs);
+      if (selectedPersonIndex === null && docs.length > 0) {
+        setSelectedPersonIndex(0);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'results');
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Global Logo Sync
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'logo'), (snapshot) => {
+      if (snapshot.exists()) {
+        setGlobalLogo(snapshot.data().url);
+      }
+    }, (error) => {
+      console.error("Global logo sync error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Test Connection
+  React.useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. ");
+        }
+      }
+    }
+    testConnection();
+  }, []);
+
   const [formFields, setFormFields] = useState([
     { id: 'field-1', label: '1. Họ và tên:', valueKey: 'fullName' as keyof CCCDInfo, isBold: true, uppercase: true, width: '70%' },
-    { id: 'field-2', label: 'Giới tính:', valueKey: 'gender' as keyof CCCDInfo, isBold: true, width: '30%' },
+    { id: 'field-2', label: 'Giới tính:', valueKey: 'gender' as keyof CCCDInfo, isBold: true, uppercase: true, width: '30%' },
     { id: 'field-3', label: '2. Ngày tháng năm sinh:', valueKey: 'dateOfBirth' as keyof CCCDInfo, isBold: true, width: '100%' },
-    { id: 'field-4', label: '3. Địa chỉ:', valueKey: 'permanentResidence' as keyof CCCDInfo, isBold: true, width: '100%' },
+    { id: 'field-4', label: '3. Địa chỉ:', valueKey: 'permanentResidence' as keyof CCCDInfo, isBold: true, uppercase: true, width: '100%' },
     { id: 'field-5', label: '4. Tên cơ quan tuyển dụng:', isBold: true, width: '100%' },
     { id: 'field-6', label: '5. Nơi đi lao động/học tập:', isBold: true, width: '100%' },
   ]);
@@ -435,13 +579,29 @@ export default function App() {
       });
 
       setFieldErrors(prev => ({ ...prev, ...newErrors }));
-      setResults(prev => {
-        const newResults = [...prev, ...uniqueResults];
-        if (selectedPersonIndex === null && newResults.length > 0) {
-          setSelectedPersonIndex(0);
+      
+      if (user) {
+        for (const result of uniqueResults) {
+          try {
+            await addDoc(collection(db, 'results'), {
+              ...result,
+              userId: user.uid,
+              createdAt: serverTimestamp()
+            });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.CREATE, 'results');
+          }
         }
-        return newResults;
-      });
+      } else {
+        setResults(prev => {
+          const newResults = [...prev, ...uniqueResults];
+          if (selectedPersonIndex === null && newResults.length > 0) {
+            setSelectedPersonIndex(0);
+          }
+          return newResults;
+        });
+      }
+      
       setImages([]); // Clear images after successful extraction to prepare for next batch
     } catch (err) {
       console.error("Extraction error:", err);
@@ -460,7 +620,27 @@ export default function App() {
     setResults([]);
     setFieldErrors({});
     setError(null);
+    setSelectedPersonIndex(null);
+    setShowMedicalForm(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Đăng nhập thất bại. Vui lòng thử lại.");
+    }
   };
 
   const formatResultLine = (item: CCCDInfo) => {
@@ -487,32 +667,42 @@ export default function App() {
     setEditData(null);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingIndex !== null && editData) {
-      const newResults = [...results];
-      newResults[editingIndex] = editData;
-      
-      // Re-validate fields
-      const newErrors = { ...fieldErrors };
-      
-      // Clear old errors for this index
-      Object.keys(newErrors).forEach(key => {
-        if (key.endsWith(`_${editingIndex}`)) {
-          delete newErrors[key];
+      if (user && (results[editingIndex] as any).id) {
+        try {
+          await updateDoc(doc(db, 'results', (results[editingIndex] as any).id), {
+            ...editData
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, `results/${(results[editingIndex] as any).id}`);
         }
-      });
+      } else {
+        const newResults = [...results];
+        newResults[editingIndex] = editData;
+        
+        // Re-validate fields
+        const newErrors = { ...fieldErrors };
+        
+        // Clear old errors for this index
+        Object.keys(newErrors).forEach(key => {
+          if (key.endsWith(`_${editingIndex}`)) {
+            delete newErrors[key];
+          }
+        });
 
-      const idError = validateIdNumber(editData.idNumber);
-      if (idError) newErrors[`idNumber_${editingIndex}`] = idError;
+        const idError = validateIdNumber(editData.idNumber);
+        if (idError) newErrors[`idNumber_${editingIndex}`] = idError;
 
-      const dobError = validateDate(editData.dateOfBirth);
-      if (dobError) newErrors[`dateOfBirth_${editingIndex}`] = dobError;
+        const dobError = validateDate(editData.dateOfBirth);
+        if (dobError) newErrors[`dateOfBirth_${editingIndex}`] = dobError;
 
-      const issueError = validateDate(editData.issueDate);
-      if (issueError) newErrors[`issueDate_${editingIndex}`] = issueError;
+        const issueError = validateDate(editData.issueDate);
+        if (issueError) newErrors[`issueDate_${editingIndex}`] = issueError;
 
-      setFieldErrors(newErrors);
-      setResults(newResults);
+        setFieldErrors(newErrors);
+        setResults(newResults);
+      }
       setEditingIndex(null);
       setEditData(null);
     }
@@ -524,27 +714,49 @@ export default function App() {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setCustomLogo(reader.result as string);
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        setCustomLogo(base64);
         setSelectedLogo(null); // Clear preset selection if custom is uploaded
+
+        // If admin, save to Firestore as global logo
+        if (user && user.email === "tuanminh9218@gmail.com") {
+          try {
+            await setDoc(doc(db, 'settings', 'logo'), {
+              url: base64,
+              updatedAt: serverTimestamp(),
+              updatedBy: user.uid
+            });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.WRITE, 'settings/logo');
+          }
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const deleteResult = (index: number) => {
-    const newResults = results.filter((_, i) => i !== index);
-    setResults(newResults);
-    
-    // Update selected person index if necessary
-    if (selectedPersonIndex === index) {
-      setSelectedPersonIndex(newResults.length > 0 ? 0 : null);
-    } else if (selectedPersonIndex !== null && selectedPersonIndex > index) {
-      setSelectedPersonIndex(selectedPersonIndex - 1);
+  const deleteResult = async (index: number) => {
+    if (user && (results[index] as any).id) {
+      try {
+        await deleteDoc(doc(db, 'results', (results[index] as any).id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `results/${(results[index] as any).id}`);
+      }
+    } else {
+      const newResults = results.filter((_, i) => i !== index);
+      setResults(newResults);
+      
+      // Update selected person index if necessary
+      if (selectedPersonIndex === index) {
+        setSelectedPersonIndex(newResults.length > 0 ? 0 : null);
+      } else if (selectedPersonIndex !== null && selectedPersonIndex > index) {
+        setSelectedPersonIndex(selectedPersonIndex - 1);
+      }
     }
     
     setItemToDelete(null);
@@ -587,7 +799,7 @@ export default function App() {
     "Cao Bằng"
   ];
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let fullResidence = manualFormData.permanentResidence || '';
@@ -615,13 +827,25 @@ export default function App() {
       permanentResidence: fullResidence
     };
     
-    setResults(prev => {
-      const newResults = [...prev, newEntry];
-      if (selectedPersonIndex === null && newResults.length > 0) {
-        setSelectedPersonIndex(0);
+    if (user) {
+      try {
+        await addDoc(collection(db, 'results'), {
+          ...newEntry,
+          userId: user.uid,
+          createdAt: serverTimestamp()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'results');
       }
-      return newResults;
-    });
+    } else {
+      setResults(prev => {
+        const newResults = [...prev, newEntry];
+        if (selectedPersonIndex === null && newResults.length > 0) {
+          setSelectedPersonIndex(0);
+        }
+        return newResults;
+      });
+    }
     
     setIsManualFormOpen(false);
     setManualFormData({
@@ -657,17 +881,55 @@ export default function App() {
   const handleDownloadPDF = () => {
     const element = document.getElementById('medical-form-to-print');
     if (!element) return;
+    
+    element.classList.add('pdf-mode');
 
     const opt = {
-      margin: 0,
+      margin: [0, 0, 0, 0],
       filename: `Mau_Kham_Suc_Khoe_${selectedPersonIndex !== null ? results[selectedPersonIndex].fullName.replace(/\s+/g, '_') : 'Template'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 3, 
+        useCORS: true, 
+        logging: false, 
+        letterRendering: true,
+        windowWidth: 794 // 210mm at 96dpi
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     // @ts-ignore
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set(opt).from(element).save().then(() => {
+        element.classList.remove('pdf-mode');
+    });
+  };
+
+  const handlePreviewPDF = async () => {
+    const element = document.getElementById('medical-form-to-print');
+    if (!element) return;
+    
+    element.classList.add('pdf-mode');
+
+    const opt = {
+      margin: [0, 0, 0, 0],
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { 
+        scale: 3, 
+        useCORS: true, 
+        logging: false, 
+        letterRendering: true,
+        windowWidth: 794
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    // @ts-ignore
+    const pdf = await html2pdf().set(opt).from(element).outputPdf('bloburl');
+    window.open(pdf, '_blank');
+    
+    element.classList.remove('pdf-mode');
   };
 
   return (
@@ -680,14 +942,44 @@ export default function App() {
             </div>
             <h1 className="font-bold text-lg tracking-tight text-slate-800">CCCD Reader AI</h1>
           </div>
-          <button 
-            onClick={reset}
-            className="text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1.5 text-sm font-medium"
-            title="Xóa tất cả dữ liệu và làm mới trang"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Làm mới
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={reset}
+              className="text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1.5 text-sm font-medium"
+              title="Xóa tất cả dữ liệu và làm mới trang"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Làm mới
+            </button>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full border border-slate-200" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                      {user.displayName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-slate-700 hidden sm:inline">{user.displayName}</span>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="text-slate-500 hover:text-red-600 transition-colors text-sm font-medium"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 flex items-center gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Đăng nhập
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -873,38 +1165,45 @@ export default function App() {
                         <label className="text-[7px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo có sẵn</label>
                         <div className="grid grid-cols-4 gap-0.5">
                           {[
+                            { id: 'logo-global', url: globalLogo, name: 'Logo Hệ Thống', isGlobal: true },
                             { id: 'logo1', url: 'https://ais-dev-l27ehl2nr5tn5nl6qkwq7y-487314014322.asia-southeast1.run.app/api/images/logo-mpuh.png', name: 'Logo MPUH' },
                             { id: 'logo2', url: 'https://picsum.photos/seed/clinic/100/100', name: 'Logo 2' },
                             { id: 'logo3', url: 'https://picsum.photos/seed/medical/100/100', name: 'Logo 3' },
-                            { id: 'logo4', url: 'https://picsum.photos/seed/health/100/100', name: 'Logo 4' }
                           ].map((logo) => (
-                            <button
-                              key={logo.id}
-                              onClick={() => {
-                                setSelectedLogo(logo.url);
-                                setCustomLogo(null); // Clear custom if preset is selected
-                              }}
-                              className={`relative aspect-square rounded overflow-hidden border transition-all ${
-                                selectedLogo === logo.url 
-                                  ? 'border-blue-600 ring-1 ring-blue-100' 
-                                  : 'border-slate-200 hover:border-blue-300'
-                              }`}
-                              title={`Chọn ${logo.name}`}
-                            >
-                              <img 
-                                src={logo.url} 
-                                alt={logo.name} 
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                              {selectedLogo === logo.url && (
-                                <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
-                                  <div className="bg-blue-600 text-white p-0.5 rounded-full">
-                                    <CheckCircle2 className="w-1 h-1" />
+                            logo.url && (
+                              <button
+                                key={logo.id}
+                                onClick={() => {
+                                  setSelectedLogo(logo.url);
+                                  setCustomLogo(null); // Clear custom if preset is selected
+                                }}
+                                className={`relative aspect-square rounded overflow-hidden border transition-all ${
+                                  selectedLogo === logo.url 
+                                    ? 'border-blue-600 ring-1 ring-blue-100' 
+                                    : 'border-slate-200 hover:border-blue-300'
+                                } ${logo.isGlobal ? 'bg-blue-50' : ''}`}
+                                title={`Chọn ${logo.name}`}
+                              >
+                                <img 
+                                  src={logo.url} 
+                                  alt={logo.name} 
+                                  className="w-full h-full object-contain"
+                                  referrerPolicy="no-referrer"
+                                />
+                                {selectedLogo === logo.url && (
+                                  <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
+                                    <div className="bg-blue-600 text-white p-0.5 rounded-full">
+                                      <CheckCircle2 className="w-1 h-1" />
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </button>
+                                )}
+                                {logo.isGlobal && (
+                                  <div className="absolute top-0 left-0 bg-blue-600 text-white text-[5px] px-0.5 font-bold uppercase">
+                                    Global
+                                  </div>
+                                )}
+                              </button>
+                            )
                           ))}
                         </div>
                       </div>
@@ -917,15 +1216,20 @@ export default function App() {
 
           <div className="flex flex-col lg:flex-row gap-2 items-start flex-1">
             {showMedicalForm ? (
-              <section className="flex-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm overflow-y-auto custom-scrollbar" style={{ maxHeight: '85vh' }}>
-                <div className="flex items-center justify-between mb-3 border-b pb-2">
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-800">Mẫu Khám Sức Khỏe</h2>
-                    <p className="text-[10px] text-slate-500">Chọn người từ danh sách để điền tự động</p>
+              <section className="flex-1 bg-slate-100 p-4 rounded-2xl border border-slate-200 shadow-inner overflow-y-auto custom-scrollbar" style={{ maxHeight: '85vh' }}>
+                <div className="flex items-center justify-between mb-4 sticky top-0 z-20 bg-slate-100/80 backdrop-blur-sm py-2">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                      <FileText className="text-blue-600 w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-slate-800">Xem trước biểu mẫu</h2>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">2 Trang: Khám sức khỏe & ECG</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <select 
-                      className="text-[10px] border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="text-[10px] border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       onChange={(e) => setSelectedPersonIndex(e.target.value === "" ? null : parseInt(e.target.value))}
                       value={selectedPersonIndex ?? ""}
                     >
@@ -936,50 +1240,57 @@ export default function App() {
                     </select>
                     <button 
                       onClick={() => setIsEditingForm(!isEditingForm)}
-                      className={`flex items-center gap-1.5 px-3 py-1 ${isEditingForm ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'} text-white text-[10px] font-bold rounded-lg transition-all shadow-md shadow-slate-100`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        isEditingForm 
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                          : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                      }`}
                     >
-                      <Settings2 className="w-3 h-3" />
-                      {isEditingForm ? 'Lưu mẫu' : 'Chỉnh sửa mẫu'}
+                      <Settings2 className="w-3.5 h-3.5" />
+                      {isEditingForm ? 'Xong' : 'Chỉnh sửa'}
                     </button>
                     <button 
-                      onClick={() => window.print()}
-                      className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
+                      onClick={handlePreviewPDF}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all"
                     >
-                      <Download className="w-3 h-3" />
-                      In mẫu
+                      <Eye className="w-3.5 h-3.5" />
+                      Xem PDF
                     </button>
                     <button 
                       onClick={handleDownloadPDF}
-                      className="flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition-all shadow-md shadow-red-100"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-all"
                     >
-                      <FileText className="w-3 h-3" />
+                      <Download className="w-3.5 h-3.5" />
                       Tải PDF
                     </button>
                     <button 
                       onClick={() => setShowMedicalForm(false)}
-                      className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-all"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* The Form Content (Matching PDF Page 1) */}
-                <div id="medical-form-to-print" className="bg-white border border-slate-300 p-[20mm] shadow-inner mx-auto print:p-0 print:border-0 print:shadow-none relative" style={{ width: '210mm', minHeight: '297mm', fontFamily: '"Times New Roman", Times, serif', color: '#000' }}>
+                <div id="medical-form-to-print" className="print:p-0 print:border-0 print:shadow-none">
+                  {/* PAGE 1: MEDICAL EXAMINATION SUMMARY */}
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner mx-auto mb-10 print:mb-0 print:border-0 print:shadow-none relative overflow-hidden" style={{ width: '210mm', height: '296.5mm', fontFamily: '"Times New Roman", Times, serif', color: '#000' }}>
                   {/* Official Header */}
                   <div className="flex items-start mb-6">
                     {/* Left: Logo & Number */}
                     <div className="text-center w-[140px] flex-shrink-0">
-                      <div className="flex flex-col items-center gap-1 mb-1">
+                      <div className="flex flex-col items-center gap-1 mb-1 mt-0">
                         {customLogo ? (
-                          <img src={customLogo} alt="Logo" className="w-14 h-14 object-contain" referrerPolicy="no-referrer" />
+                          <img src={customLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
                         ) : selectedLogo ? (
-                          <img src={selectedLogo} alt="Logo" className="w-14 h-14 object-contain" referrerPolicy="no-referrer" />
+                          <img src={selectedLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
+                        ) : globalLogo ? (
+                          <img src={globalLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-12 h-12 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
+                          <div className="w-[130px] h-[60px] pl-[6px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl -mt-[7px]">MP</div>
                         )}
                       </div>
-                      <p className="text-[10pt]">Số: .........../KHTH</p>
+                      <p className="text-[10pt] -mt-[11px]">Số: .........../KHTH</p>
                     </div>
 
                     {/* Right: Title Section */}
@@ -991,11 +1302,11 @@ export default function App() {
                   </div>
 
                   {/* Photo Box 4x6 (Positioned below Logo/Số) */}
-                  <div className="absolute border border-black flex items-center justify-center text-center p-2 text-[10pt]" style={{ top: '40mm', left: '20mm', height: '200px', width: '140px' }}>
+                  <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] pl-2 pr-2 -ml-[25px] -mt-[53px] mb-0 mr-0 pt-2 h-[188.994px] w-[136px]" style={{ top: '40mm', left: '20mm' }}>
                     Ảnh 4x6
                   </div>
 
-                  <div className="flex flex-wrap gap-y-1 text-[12pt] mb-6 ml-[160px]">
+                  <div className="flex flex-wrap gap-y-1 text-[12pt] mb-6 w-[560px] pl-0 pt-0 -mt-[22px] ml-[160px]">
                     <DndContext 
                       sensors={sensors}
                       collisionDetection={closestCenter}
@@ -1036,13 +1347,13 @@ export default function App() {
                       collisionDetection={closestCenter}
                       onDragEnd={handleDragEndRows}
                     >
-                      <table className="w-full border-collapse border border-black text-[11pt]">
+                      <table className="w-full border-collapse border border-black text-[9pt] mt-1 pt-0">
                         <thead>
                           <tr className="bg-slate-50">
-                            <th className="border border-black p-2 w-10 text-center">TT</th>
-                            <th className="border border-black p-2 w-[40%] text-center">NỘI DUNG KHÁM</th>
-                            <th className="border border-black p-2 text-center">KẾT QUẢ</th>
-                            <th className="border border-black p-2 w-32 text-center">BS KHÁM KÝ</th>
+                            <th className="border border-black py-2 px-1 w-8 text-center align-middle">TT</th>
+                            <th className="border border-black py-2 px-1 w-[35%] text-center align-middle">NỘI DUNG KHÁM</th>
+                            <th className="border border-black py-2 px-1 text-center align-middle">KẾT QUẢ</th>
+                            <th className="border border-black py-2 px-1 w-24 text-center align-middle">BS KHÁM KÝ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1075,14 +1386,13 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="mt-6 text-[12pt] space-y-6">
+                  <div className="mt-6 text-[12pt] space-y-6 form-section">
                     <div>
-                      <p className="font-bold">KẾT LUẬN: <span className="font-normal italic">Đủ sức khỏe / Không đủ sức khỏe để làm việc.</span></p>
-                      <p className="mt-2">Lý do (nếu không đủ): ....................................................................................................................................</p>
-                      <p className="border-b border-dotted border-black w-full min-h-[1.5rem] mt-1"></p>
+                      <p className="font-bold -mt-3">KẾT LUẬN: <span className="font-normal italic">Đủ sức khỏe / Không đủ sức khỏe để làm việc.</span></p>
+                      <p className="mt-2 flex items-baseline gap-2">Lý do (nếu không đủ): <span className="border-b border-dotted border-black flex-1 relative top-[5px]">&nbsp;</span></p>
                     </div>
                     
-                    <div className="grid grid-cols-2 mt-12">
+                    <div className="grid grid-cols-2 mt-12 signature-block">
                       <div className="text-center">
                         <p className="font-bold uppercase mb-20">GIÁM ĐỐC BỆNH VIỆN</p>
                         <p className="font-bold">(Ký tên, đóng dấu)</p>
@@ -1090,7 +1400,94 @@ export default function App() {
                       <div className="text-center">
                         <p className="italic mb-2">Hà Nội, ngày ....... tháng ....... năm .......</p>
                         <p className="font-bold uppercase mb-20">KT. TRƯỞNG PHÒNG KHTH</p>
-                        <p className="font-bold">BS. ........................................</p>
+                        <p className="font-bold flex items-baseline gap-2 justify-center">BS. <span className="border-b border-dotted border-black w-40 relative top-[5px]">&nbsp;</span></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PAGE 2: ECG RESULT FORM */}
+                  <div className="html2pdf__page-break" />
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner mx-auto print:border-0 print:shadow-none relative overflow-hidden" style={{ width: '210mm', height: '296.5mm', fontFamily: '"Times New Roman", Times, serif', color: '#000' }}>
+                    <div className="flex justify-between items-start mb-8">
+                      <div className="text-center w-[140px]">
+                        {customLogo ? (
+                          <img src={customLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain mb-1" referrerPolicy="no-referrer" />
+                        ) : selectedLogo ? (
+                          <img src={selectedLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain mb-1" referrerPolicy="no-referrer" />
+                        ) : globalLogo ? (
+                          <img src={globalLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain mb-1" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-[130px] h-[60px] pl-[6px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl mb-1">MP</div>
+                        )}
+                        <p className="font-bold text-[9pt] uppercase leading-tight">MPUH BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                      </div>
+                      <div className="text-center flex-1">
+                        <p className="font-bold text-[11pt] uppercase">CỘNG HÀA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold text-[11pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
+                      </div>
+                    </div>
+
+                    <div className="text-center mb-10">
+                      <h1 className="text-[18pt] font-bold uppercase">PHIẾU KẾT QUẢ ĐIỆN TIM (ECG)</h1>
+                    </div>
+
+                    <div className="space-y-4 text-[12pt] mb-10">
+                      <p className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">Họ và tên:</span>
+                        <span className="border-b border-dotted border-black flex-1 uppercase font-bold text-blue-800 px-2 pb-[2px]">
+                          {selectedPersonIndex !== null ? results[selectedPersonIndex].fullName.toUpperCase() : '\u00A0'}
+                        </span>
+                        <span className="font-bold whitespace-nowrap ml-4">Giới tính:</span>
+                        <span className="border-b border-dotted border-black w-24 px-2 pb-[2px]">
+                          {selectedPersonIndex !== null ? (results[selectedPersonIndex].gender || 'Nam') : 'Nam'}
+                        </span>
+                      </p>
+                      <p className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">Ngày sinh:</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2 pb-[2px]">
+                          {selectedPersonIndex !== null ? results[selectedPersonIndex].dateOfBirth : '\u00A0'}
+                        </span>
+                      </p>
+                      <p className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">Địa chỉ:</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2 pb-[2px]">
+                          {selectedPersonIndex !== null ? results[selectedPersonIndex].permanentResidence : '\u00A0'}
+                        </span>
+                      </p>
+                    </div>
+
+                    <table className="w-full border-collapse border border-black text-[12pt] mb-10">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="border border-black py-3 px-4 text-left w-1/2">NỘI DUNG KHÁM</th>
+                          <th className="border border-black py-3 px-4 text-center">KẾT QUẢ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-black py-6 px-4 font-bold">1. Điện tim</td>
+                          <td className="border border-black py-6 px-4"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <div className="text-[12pt] mb-16">
+                      <p className="font-bold mb-3 text-blue-900">Nhận xét của bác sĩ:</p>
+                      <div className="space-y-6">
+                        <p className="border-b border-dotted border-black h-6"></p>
+                        <p className="border-b border-dotted border-black h-6"></p>
+                        <p className="border-b border-dotted border-black h-6"></p>
+                        <p className="border-b border-dotted border-black h-6"></p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end text-[12pt] signature-block">
+                      <div className="text-center w-72">
+                        <p className="italic mb-2">Ngày {new Date().toLocaleDateString('vi-VN').split('/')[0]} tháng {new Date().toLocaleDateString('vi-VN').split('/')[1]} năm {new Date().toLocaleDateString('vi-VN').split('/')[2]}</p>
+                        <p className="font-bold uppercase mb-28">Doctor</p>
+                        <p className="font-bold flex items-baseline gap-2 justify-center">BS. <span className="border-b border-dotted border-black w-44">&nbsp;</span></p>
                       </div>
                     </div>
                   </div>
@@ -1336,25 +1733,25 @@ export default function App() {
                                   <div className="text-[6px] text-red-500 font-bold mt-0">{fieldErrors[`dateOfBirth_${index}`]}</div>
                                 )}
                               </td>
-                              <td className="px-0.5 py-0 text-[9px] text-slate-600 whitespace-nowrap">
+                              <td className="px-0.5 py-0 text-[9px] text-slate-600 whitespace-nowrap uppercase">
                                 {isEditing ? (
                                   <select 
                                     value={editData?.gender} 
                                     onChange={(e) => handleEditChange('gender', e.target.value)}
-                                    className="w-full bg-white border border-blue-200 rounded px-1 py-0 text-[9px] focus:outline-none focus:border-blue-500"
+                                    className="w-full bg-white border border-blue-200 rounded px-1 py-0 text-[9px] focus:outline-none focus:border-blue-500 uppercase"
                                   >
                                     <option value="Nam">Nam</option>
                                     <option value="Nữ">Nữ</option>
                                   </select>
                                 ) : item.gender}
                               </td>
-                              <td className="px-0.5 py-0 text-[9px] text-slate-600 truncate" title={displayItem.permanentResidence}>
+                              <td className="px-0.5 py-0 text-[9px] text-slate-600 truncate uppercase" title={displayItem.permanentResidence}>
                                 {isEditing ? (
                                   <input 
                                     type="text" 
                                     value={editData?.permanentResidence} 
                                     onChange={(e) => handleEditChange('permanentResidence', e.target.value)}
-                                    className="w-full bg-white border border-blue-200 rounded px-1 py-0 text-[9px] focus:outline-none focus:border-blue-500"
+                                    className="w-full bg-white border border-blue-200 rounded px-1 py-0 text-[9px] focus:outline-none focus:border-blue-500 uppercase"
                                   />
                                 ) : getProvinceOnly(item.permanentResidence)}
                               </td>
@@ -1824,8 +2221,8 @@ function SortableFormField({
         <span className={`${field.isBold ? 'font-bold' : ''} whitespace-nowrap`}>{field.label}</span>
       )}
 
-      <span className={`border-b border-dotted border-black flex-1 min-h-[1.5rem] px-2 ${field.uppercase ? 'uppercase' : ''} ${field.valueKey === 'fullName' ? 'text-blue-800 font-bold text-[13pt]' : ''}`}>
-        {displayValue}
+      <span className={`border-b border-dotted border-black flex-1 px-2 pb-[2px] ${field.uppercase ? 'uppercase' : ''} ${field.valueKey === 'fullName' ? 'text-blue-800 font-bold text-[13pt]' : ''}`}>
+        {displayValue || '\u00A0'}
       </span>
 
       {isEditing && (
@@ -1886,7 +2283,7 @@ function SortableTableRow({
 
   return (
     <tr ref={setNodeRef} style={style} className={isDragging ? 'bg-blue-50' : ''}>
-      <td className="border border-black p-2 text-center font-bold relative">
+      <td className="border border-black py-2 px-1 text-center font-bold relative align-middle">
         {isEditing && (
           <div {...attributes} {...listeners} className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-blue-500">
             <GripVertical className="w-3 h-3" />
@@ -1894,7 +2291,7 @@ function SortableTableRow({
         )}
         {row.tt}
       </td>
-      <td className="border border-black p-2">
+      <td className="border border-black py-2 px-1 align-middle">
         {isEditing ? (
           <input 
             type="text" 
@@ -1904,7 +2301,7 @@ function SortableTableRow({
           />
         ) : row.label}
       </td>
-      <td className="border border-black p-2 italic text-slate-400">
+      <td className="border border-black py-2 px-1 italic text-slate-400 whitespace-nowrap align-middle">
         {isEditing ? (
           <input 
             type="text" 
@@ -1914,14 +2311,14 @@ function SortableTableRow({
           />
         ) : row.result}
       </td>
-      <td className="border border-black p-2 relative">
+      <td className="border border-black py-2 px-1 relative align-middle">
         <div className="flex flex-col gap-1">
           <input 
             type="text" 
             value={tempDoctor} 
             onChange={(e) => setTempDoctor(e.target.value)}
-            placeholder="BS..."
-            className={`w-full bg-transparent text-xs focus:outline-none ${isDoctorDirty ? 'border-b border-blue-400' : ''}`}
+            placeholder="BS"
+            className={`w-full bg-transparent text-[8pt] focus:outline-none ${isDoctorDirty ? 'border-b border-blue-400' : ''}`}
           />
           {isDoctorDirty && (
             <div className="flex gap-1 justify-end">

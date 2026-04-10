@@ -70,7 +70,7 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 100% !important;
+    width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
@@ -80,4 +80,37 @@
     size: A4;
     margin: 0;
   }
+}
+
+.pdf-mode {
+  width: 210mm !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-mode * {
+  box-sizing: border-box !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.pdf-mode input {
+  border: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.html2pdf__page-break {
+  display: block;
+  page-break-before: always;
+  break-before: page;
+}
+
+/* Prevent awkward breaks in tables and signatures */
+.pdf-mode tr, 
+.pdf-mode .signature-block,
+.pdf-mode .form-section {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
 }
