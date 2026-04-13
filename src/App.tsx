@@ -129,6 +129,15 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+function removeAccents(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toUpperCase();
+}
+
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -179,6 +188,9 @@ export default function App() {
   const [isLogoTabOpen, setIsLogoTabOpen] = useState(false);
   const [selectedLogo, setSelectedLogo] = useState<string | null>(null);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
+  const [logoScale, setLogoScale] = useState(1);
+  const [logoX, setLogoX] = useState(0);
+  const [logoY, setLogoY] = useState(0);
   const [showMedicalForm, setShowMedicalForm] = useState(false);
   const [globalLogo, setGlobalLogo] = useState<string | null>(null);
   const [selectedPersonIndex, setSelectedPersonIndex] = useState<number | null>(null);
@@ -193,6 +205,10 @@ export default function App() {
   const [provinceSearch, setProvinceSearch] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
   const [isEditingForm, setIsEditingForm] = useState(false);
+  const [formDate, setFormDate] = useState(() => {
+    const today = new Date();
+    return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+  });
   
   // Firebase Auth Listener
   React.useEffect(() => {
@@ -223,15 +239,25 @@ export default function App() {
       })) as (CCCDInfo & { id: string })[];
       
       setResults(docs);
-      if (selectedPersonIndex === null && docs.length > 0) {
-        setSelectedPersonIndex(0);
-      }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'results');
     });
 
     return () => unsubscribe();
   }, [user]);
+
+  // Ensure selectedPersonIndex is always valid
+  React.useEffect(() => {
+    if (results.length > 0) {
+      if (selectedPersonIndex === null || selectedPersonIndex >= results.length) {
+        setSelectedPersonIndex(0);
+      }
+    } else {
+      if (selectedPersonIndex !== null) {
+        setSelectedPersonIndex(null);
+      }
+    }
+  }, [results.length, selectedPersonIndex]);
 
   // Global Logo Sync
   React.useEffect(() => {
@@ -916,7 +942,7 @@ export default function App() {
 
     const opt = {
       margin: [15, 20, 15, 20], // Top, Left, Bottom, Right (in mm) - matches 1.5cm and 2cm
-      filename: `Mau_Kham_Suc_Khoe_${selectedPersonIndex !== null ? results[selectedPersonIndex].fullName.replace(/\s+/g, '_') : 'Template'}.pdf`,
+      filename: `Mau_Kham_Suc_Khoe_${(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].fullName.replace(/\s+/g, '_') : 'Template'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
@@ -1237,6 +1263,75 @@ export default function App() {
                           ))}
                         </div>
                       </div>
+
+                      <div className="h-px bg-slate-200 mx-1" />
+
+                      {/* Logo Adjustments */}
+                      <div className="space-y-1.5 p-1 bg-slate-100/50 rounded-lg">
+                        <div className="flex items-center justify-between px-1">
+                          <label className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Điều chỉnh Logo</label>
+                          <button 
+                            onClick={() => {
+                              setLogoScale(1);
+                              setLogoX(0);
+                              setLogoY(0);
+                            }}
+                            className="text-[6px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                          >
+                            Đặt lại
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-1 px-1">
+                          {/* Scale */}
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[6px] text-slate-500">Kích thước: {logoScale.toFixed(2)}x</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0.5" 
+                              max="2" 
+                              step="0.05" 
+                              value={logoScale} 
+                              onChange={(e) => setLogoScale(parseFloat(e.target.value))}
+                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                          </div>
+
+                          {/* Position X */}
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[6px] text-slate-500">Vị trí X: {logoX}px</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="-50" 
+                              max="50" 
+                              step="1" 
+                              value={logoX} 
+                              onChange={(e) => setLogoX(parseInt(e.target.value))}
+                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                          </div>
+
+                          {/* Position Y */}
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[6px] text-slate-500">Vị trí Y: {logoY}px</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="-50" 
+                              max="50" 
+                              step="1" 
+                              value={logoY} 
+                              onChange={(e) => setLogoY(parseInt(e.target.value))}
+                              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -1247,7 +1342,7 @@ export default function App() {
           <div className="flex flex-col lg:flex-row gap-2 items-start flex-1">
             {showMedicalForm ? (
               <section className="flex-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm overflow-y-auto custom-scrollbar" style={{ maxHeight: '85vh' }}>
-                <div className="flex items-center justify-between mb-3 border-b pb-2">
+                <div className="sticky top-0 bg-white z-50 flex items-center justify-between mb-3 border-b pb-2 pt-1">
                   <div>
                     <h2 className="text-sm font-bold text-slate-800">Mẫu Khám Sức Khỏe</h2>
                     <p className="text-[10px] text-slate-500">Chọn người từ danh sách để điền tự động</p>
@@ -1263,6 +1358,16 @@ export default function App() {
                         <option key={i} value={i}>{r.fullName}</option>
                       ))}
                     </select>
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <input 
+                        type="text" 
+                        value={formDate}
+                        onChange={(e) => setFormDate(e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        className="text-[10px] bg-transparent focus:outline-none text-slate-600 font-medium w-20"
+                      />
+                    </div>
                     <button 
                       onClick={() => setIsEditingForm(!isEditingForm)}
                       className={`flex items-center gap-1.5 px-3 py-1 ${isEditingForm ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'} text-white text-[10px] font-bold rounded-lg transition-all shadow-md shadow-slate-100`}
@@ -1308,15 +1413,17 @@ export default function App() {
                     <div className="flex justify-between items-start mb-6 w-full">
                       <div className="w-[180px] text-center">
                         <div className="flex flex-col items-center">
-                          {customLogo ? (
-                            <img src={customLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
-                          ) : selectedLogo ? (
-                            <img src={selectedLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
-                          ) : globalLogo ? (
-                            <img src={globalLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
-                          )}
+                          <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
+                            {customLogo ? (
+                              <img src={customLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : selectedLogo ? (
+                              <img src={selectedLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : globalLogo ? (
+                              <img src={globalLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
+                            )}
+                          </div>
                           <p className="font-bold text-[11pt] mt-1 uppercase">BỆNH VIỆN ĐHYD</p>
                           <p className="text-[10pt]">Số: .........../KHTH</p>
                         </div>
@@ -1423,7 +1530,7 @@ export default function App() {
                       {/* Signature Section - Using a table-like structure for right alignment */}
                       <div className="flex justify-end mt-8">
                         <div className="w-[350px] text-center space-y-1">
-                          <p className="italic">BẮC NINH, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</p>
+                          <p className="italic">BẮC NINH, Ngày {formDate.split('/')[0]} tháng {formDate.split('/')[1]} năm {formDate.split('/')[2]}</p>
                           <p className="font-bold uppercase">KT. TRƯỞNG PHÒNG KHTH</p>
                           <div className="h-24"></div> {/* Signature space */}
                           <p className="font-bold flex items-baseline gap-2 justify-center">BS. <span className="border-b border-dotted border-black w-40 pb-[2px]">&nbsp;</span></p>
@@ -1437,7 +1544,20 @@ export default function App() {
                     {/* ECG Header - Table structure for alignment */}
                     <div className="flex justify-between items-start mb-8 w-full">
                       <div className="text-left w-[250px]">
-                        <p className="font-bold text-[11pt] uppercase">MPUH BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
+                            {customLogo ? (
+                              <img src={customLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : selectedLogo ? (
+                              <img src={selectedLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : globalLogo ? (
+                              <img src={globalLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-[80px] h-[40px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">MP</div>
+                            )}
+                          </div>
+                        </div>
+                        <p className="font-bold text-[11pt] uppercase">BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
                         <p className="text-[10pt]">Số: .........../KHTH</p>
                       </div>
                       <div className="text-center flex-1">
@@ -1457,23 +1577,23 @@ export default function App() {
                       <div className="flex items-baseline gap-2">
                         <span className="font-bold whitespace-nowrap">Họ và tên (Full name):</span>
                         <span className="border-b border-dotted border-black flex-1 px-2 uppercase font-bold text-blue-800">
-                          {selectedPersonIndex !== null ? results[selectedPersonIndex].fullName : '..................................................................'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].fullName : '..................................................................'}
                         </span>
                         <span className="font-bold whitespace-nowrap ml-4">Giới tính (Sex):</span>
                         <span className="border-b border-dotted border-black w-20 px-2">
-                          {selectedPersonIndex !== null ? results[selectedPersonIndex].gender : 'Nam'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="font-bold whitespace-nowrap">Ngày sinh (Date of birth):</span>
                         <span className="border-b border-dotted border-black flex-1 px-2">
-                          {selectedPersonIndex !== null ? results[selectedPersonIndex].dateOfBirth : '..................................................................'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..................................................................'}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="font-bold whitespace-nowrap">Địa chỉ (Address):</span>
                         <span className="border-b border-dotted border-black flex-1 px-2">
-                          {selectedPersonIndex !== null ? results[selectedPersonIndex].permanentResidence : '..................................................................'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].permanentResidence : '..................................................................'}
                         </span>
                       </div>
                     </div>
@@ -1482,8 +1602,8 @@ export default function App() {
                     <table className="w-full border-collapse border border-black text-[11pt] mb-8">
                       <thead>
                         <tr className="bg-slate-50">
-                          <th className="border border-black py-2 px-4 text-left w-1/2">DỊCH VỤ KHÁM (Examination services)</th>
-                          <th className="border border-black py-2 px-4 text-center">KẾT QUẢ (Result)</th>
+                          <th className="border border-black py-2 px-4 text-center w-1/2 uppercase">DỊCH VỤ KHÁM (Examination services)</th>
+                          <th className="border border-black py-2 px-4 text-center uppercase">KẾT QUẢ (Result)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1510,10 +1630,587 @@ export default function App() {
                       
                       <div className="flex justify-end mt-10">
                         <div className="text-center w-[300px] space-y-1">
-                          <p className="italic">Ngày (Date) {new Date().getDate()}/{new Date().getMonth() + 1}/{new Date().getFullYear()}</p>
-                          <p className="font-bold uppercase">Bác sĩ (Doctor)</p>
+                          <p className="italic">Ngày (Date) {formDate}</p>
+                          <p className="font-bold uppercase">BÁC SĨ (DOCTOR)</p>
                           <div className="h-24"></div>
                           <p className="font-bold">................................................</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page 3: PHIẾU KẾT QUẢ ĐIỆN XRAY (XQUANG) */}
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                    {/* X-ray Header */}
+                    <div className="flex justify-between items-start mb-8 w-full">
+                      <div className="text-left w-[250px]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
+                            {customLogo ? (
+                              <img src={customLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : selectedLogo ? (
+                              <img src={selectedLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : globalLogo ? (
+                              <img src={globalLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-[80px] h-[40px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">MP</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-center flex-1">
+                        <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
+                      </div>
+                      <div className="w-[250px]"></div> {/* Spacer */}
+                    </div>
+
+                    <div className="text-center mb-8">
+                      <h2 className="text-[18pt] font-bold uppercase">PHIẾU KẾT QUẢ ĐIỆN XRAY (XQUANG)</h2>
+                    </div>
+
+                    {/* X-ray Patient Info */}
+                    <div className="space-y-4 mb-6 text-[12pt]">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">1. Full name (Họ tên):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2 uppercase font-bold text-blue-800">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].fullName : '..................................................................'}
+                        </span>
+                        <span className="font-bold whitespace-nowrap ml-4">Sex (Giới tính):</span>
+                        <span className="border-b border-dotted border-black w-24 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">2. Date of Birth (Sinh ngày):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..................................................................'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">Address (Địa chỉ):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].permanentResidence : '..................................................................'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* X-ray Table */}
+                    <table className="w-full border-collapse border border-black text-[11pt] mb-8">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="border border-black py-3 px-4 text-center w-1/2 uppercase">
+                            <p className="font-bold">Examination Services</p>
+                            <p className="font-bold">(Dịch vụ Khám)</p>
+                          </th>
+                          <th className="border border-black py-3 px-4 text-center uppercase">
+                            <p className="font-bold">Result</p>
+                            <p className="font-bold">(Kết quả)</p>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{ pageBreakInside: 'avoid' }}>
+                          <td className="border border-black py-10 px-4">
+                            1. Chụp Xquang ngực thẳng
+                          </td>
+                          <td className="border border-black py-10 px-4 italic text-center">
+                            {isEditingForm ? (
+                              <textarea 
+                                placeholder="Nhập kết quả..."
+                                className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center resize-none"
+                                rows={3}
+                              />
+                            ) : ''}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* X-ray Footer */}
+                    <div className="mt-8 text-[12pt]">
+                      <p className="font-bold mb-2">Doctor's other comments (Nhận xét của bác sĩ):</p>
+                      <p className="border-b border-dotted border-black w-full pb-1">&nbsp;</p>
+                      <p className="border-b border-dotted border-black w-full pb-1 mt-2">&nbsp;</p>
+                      
+                      <div className="flex justify-end mt-10">
+                        <div className="text-center w-[300px] space-y-1">
+                          <p className="italic">Ngày (Date) {formDate}</p>
+                          <p className="font-bold uppercase">BÁC SĨ (DOCTOR)</p>
+                          <div className="h-24"></div>
+                          <p className="font-bold">................................................</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page 4: PHIẾU KẾT QUẢ XÉT NGHIỆM */}
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                    {/* Lab Header */}
+                    <div className="flex justify-between items-start mb-8 w-full">
+                      <div className="text-left w-[250px]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
+                            {customLogo ? (
+                              <img src={customLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : selectedLogo ? (
+                              <img src={selectedLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : globalLogo ? (
+                              <img src={globalLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-[80px] h-[40px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">MP</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-center flex-1">
+                        <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
+                      </div>
+                      <div className="w-[250px]"></div> {/* Spacer */}
+                    </div>
+
+                    <div className="text-center mb-8">
+                      <h2 className="text-[18pt] font-bold uppercase">PHIẾU KẾT QUẢ XÉT NGHIỆM</h2>
+                    </div>
+
+                    {/* Lab Patient Info */}
+                    <div className="space-y-4 mb-6 text-[12pt]">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">1. Full name (Họ tên):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2 uppercase font-bold text-blue-800">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].fullName : '..................................................................'}
+                        </span>
+                        <span className="font-bold whitespace-nowrap ml-4">Sex (Giới tính):</span>
+                        <span className="border-b border-dotted border-black w-24 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">2. Date of Birth (Sinh ngày):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..................................................................'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold whitespace-nowrap">3. Address (Địa chỉ):</span>
+                        <span className="border-b border-dotted border-black flex-1 px-2">
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].permanentResidence : '..................................................................'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Lab Table */}
+                    <table className="w-full border-collapse border border-black text-[10pt] mb-8">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="border border-black py-2 px-1 text-center w-[40px] uppercase font-bold">STT</th>
+                          <th className="border border-black py-2 px-2 text-center uppercase font-bold">TÊN XÉT NGHIỆM</th>
+                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[120px]">KẾT QUẢ</th>
+                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[150px]">GIÁ TRỊ THAM CHIẾU</th>
+                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[80px]">ĐƠN VỊ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Hematology */}
+                        <tr className="bg-slate-50">
+                          <td colSpan={5} className="border border-black py-1 px-2 font-bold">Xét nghiệm huyết học:</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black py-1 px-1 text-center">1</td>
+                          <td className="border border-black py-1 px-2">Nhóm máu</td>
+                          <td className="border border-black py-1 px-2 text-center italic">
+                            {isEditingForm ? <input type="text" className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center" /> : ''}
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                        </tr>
+
+                        {/* Immunology */}
+                        <tr className="bg-slate-50">
+                          <td colSpan={5} className="border border-black py-1 px-2 font-bold">Xét nghiệm miễn dịch:</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black py-1 px-1 text-center">1</td>
+                          <td className="border border-black py-1 px-2">HIV (ELISA)</td>
+                          <td className="border border-black py-1 px-2 text-center italic">
+                            {isEditingForm ? <input type="text" className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center" /> : ''}
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center text-[9pt]">
+                            ÂM TÍNH<br/>NEGATIVE
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black py-1 px-1 text-center">2</td>
+                          <td className="border border-black py-1 px-2">HBsAg (ELISA)</td>
+                          <td className="border border-black py-1 px-2 text-center italic">
+                            {isEditingForm ? <input type="text" className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center" /> : ''}
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center text-[9pt]">
+                            ÂM TÍNH<br/>NEGATIVE
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black py-1 px-1 text-center">3</td>
+                          <td className="border border-black py-1 px-2">Giang mai (TPHA)</td>
+                          <td className="border border-black py-1 px-2 text-center italic">
+                            {isEditingForm ? <input type="text" className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center" /> : ''}
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center text-[9pt]">
+                            ÂM TÍNH<br/>NEGATIVE
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                        </tr>
+
+                        {/* Microbiology */}
+                        <tr className="bg-slate-50">
+                          <td colSpan={5} className="border border-black py-1 px-2 font-bold">Xét nghiệm vi sinh:</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black py-1 px-1 text-center">1</td>
+                          <td className="border border-black py-1 px-2">HCG</td>
+                          <td className="border border-black py-1 px-2 text-center italic">
+                            {isEditingForm ? <input type="text" className="w-full bg-transparent border-b border-blue-200 focus:outline-none text-center" /> : ''}
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center text-[9pt]">
+                            ÂM TÍNH<br/>NEGATIVE
+                          </td>
+                          <td className="border border-black py-1 px-2 text-center"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Lab Footer */}
+                    <div className="mt-8 text-[12pt]">
+                      <div className="flex justify-end mt-10">
+                        <div className="text-center w-[300px] space-y-1">
+                          <p className="italic">Ngày (Date) {formDate}</p>
+                          <p className="font-bold uppercase">BÁC SĨ (DOCTOR)</p>
+                          <div className="h-24"></div>
+                          <p className="font-bold">................................................</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page 5: FOREIGNER PHYSICAL EXAMINATION FORM (Chinese) */}
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif' }}>
+                    <div className="text-center mb-6">
+                      <h2 className="text-[20pt] font-bold">外 国 人 体 格 检 查 表</h2>
+                      <p className="text-[12pt] font-bold">FOREIGNER PHYSICAL EXAMINATION FORM</p>
+                    </div>
+
+                    <table className="w-full border-collapse border border-black text-[10pt]">
+                      <tbody>
+                        <tr>
+                          <td className="border border-black p-2 w-[80px] text-center">
+                            姓名<br/>Name
+                          </td>
+                          <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].fullName) : ''}
+                          </td>
+                          <td className="border border-black p-2 w-[60px] text-center">
+                            性别<br/>Sex
+                          </td>
+                          <td className="border border-black p-2 w-[120px]">
+                            <div className="flex flex-col gap-1">
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={(selectedPersonIndex !== null && results[selectedPersonIndex]?.gender === 'Nam')} readOnly />
+                                <span>男 Male</span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={(selectedPersonIndex !== null && results[selectedPersonIndex]?.gender === 'Nữ')} readOnly />
+                                <span>女 Female</span>
+                              </label>
+                            </div>
+                          </td>
+                          <td className="border border-black p-2 w-[100px] text-center">
+                            出生日期<br/>Birthday
+                          </td>
+                          <td className="border border-black p-2 w-[100px] text-center text-red-600">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : ''}
+                          </td>
+                          <td rowSpan={3} className="border border-black p-2 w-[150px] text-center align-middle relative">
+                            <div className="border border-dashed border-slate-300 w-full aspect-[3/4] flex items-center justify-center text-slate-400 text-[8pt]">
+                              照片<br/>(加盖检查单位印章)<br/><br/>Photo<br/>(Stamped Official Stamp)
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan={2} className="border border-black p-2 text-center">
+                            现在通讯地址<br/>Present mailing address
+                          </td>
+                          <td colSpan={4} className="border border-black p-2 text-center font-bold text-red-600 uppercase">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence) : ''}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2 text-center">
+                            国籍或地区<br/>Nationality<br/>(or Area)
+                          </td>
+                          <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
+                            VIET NAM
+                          </td>
+                          <td className="border border-black p-2 text-center">
+                            出生地<br/>Birth place
+                          </td>
+                          <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence.split(',').pop() || '') : ''}
+                          </td>
+                          <td className="border border-black p-2 text-center">
+                            血型<br/>Blood type
+                          </td>
+                          <td className="border border-black p-2"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <div className="mt-4 border border-black p-2">
+                      <p className="text-center font-bold mb-2">过去是否患有下列疾病：（每项后面请回答“否”或“是”）</p>
+                      <p className="text-center text-[9pt] mb-2">Have you ever had any of the following diseases?<br/>(Each item must be answered "Yes" or "No")</p>
+                      
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[9pt]">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>班疹 伤寒 Typhus fever</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>菌 痢 Bacillary dysentery</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>小儿麻痹症 Poliomyelitis</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>布氏杆菌病 Brucellosis</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>白 喉 Diphtheria</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>病毒性肝炎 Viral hepatitis</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>猩 红 热 Scarlet fever</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>产褥期链球 菌 感 染 Puerperal streptococcus infection</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>回 归 热 Relapsing fever</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>伤寒和付伤寒 Typhoid and paratyphoid fever</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                          <span>流行性脑脊髓膜炎 Epidemic cerebrospinal meningitis</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 border border-black p-2">
+                      <p className="text-center font-bold mb-2">是否患有下列危及公共秩序和安全的病症：（每项后面请回答“否”或“是”）</p>
+                      <p className="text-center text-[9pt] mb-2">Do you have any of the following diseases or disorders endangering the public order and security?<br/>(Each item must be answered "Yes" or "No")</p>
+                      
+                      <div className="space-y-1 text-[9pt] max-w-[600px] mx-auto">
+                        <div className="flex justify-between items-center">
+                          <span>毒物瘾 Toxicomania ....................................................................................................................................</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>精神错乱 Mental confusion ................................................................................................................................</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>精神病 Psychosis: 躁狂型 Manic paychosis ....................................................................................................</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="ml-24">妄想型 Paranoid psychosis ....................................................................................................</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="ml-24">幻觉型 Hallucinatory ............................................................................................................</span>
+                          <div className="flex gap-2"><span>□No</span><span>□Yes</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <table className="w-full border-collapse border border-black mt-4 text-[9pt]">
+                      <tbody>
+                        <tr>
+                          <td className="border border-black p-2 w-1/3">
+                            身高 Height <span className="float-right">厘米 CM</span>
+                          </td>
+                          <td className="border border-black p-2 w-1/3">
+                            体重 Weight <span className="float-right">公斤 Kg</span>
+                          </td>
+                          <td className="border border-black p-2 w-1/3">
+                            血压 Blood pressure <span className="float-right">毫米汞柱 mmHg</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2">
+                            发育情况 Development
+                          </td>
+                          <td className="border border-black p-2">
+                            营养情况 Nourishment
+                          </td>
+                          <td className="border border-black p-2">
+                            颈部 Neck
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2">
+                            视力 Vision <span className="ml-4">左 L ______________</span><br/><span className="ml-16">右 R ______________</span>
+                          </td>
+                          <td className="border border-black p-2">
+                            矫正视力 Corrected vision <span className="ml-4">左 L ______________</span><br/><span className="ml-28">右 R ______________</span>
+                          </td>
+                          <td className="border border-black p-2">
+                            眼 Eyes
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2">
+                            辨色力 Colour sense
+                          </td>
+                          <td className="border border-black p-2">
+                            皮肤 Skin
+                          </td>
+                          <td className="border border-black p-2">
+                            淋巴结 Lymph nodes
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2">
+                            耳 Ears
+                          </td>
+                          <td className="border border-black p-2">
+                            鼻 Nose
+                          </td>
+                          <td className="border border-black p-2">
+                            扁桃体 Tonsils
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="border border-black p-2">
+                            心 Heart
+                          </td>
+                          <td className="border border-black p-2">
+                            肺 Lungs
+                          </td>
+                          <td className="border border-black p-2">
+                            腹部 Abdomen
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Page 6: FOREIGNER PHYSICAL EXAMINATION FORM - Page 2 (Chinese) */}
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif' }}>
+                    <table className="w-full border-collapse border border-black text-[10pt]">
+                      <tbody>
+                        <tr className="h-[80px]">
+                          <td className="border border-black p-2 w-[100px] text-center">
+                            脊柱<br/>Spine
+                          </td>
+                          <td className="border border-black p-2 w-[200px]"></td>
+                          <td className="border border-black p-2 w-[100px] text-center">
+                            四肢<br/>Extremities
+                          </td>
+                          <td className="border border-black p-2 w-[200px]"></td>
+                          <td className="border border-black p-2 w-[100px] text-center">
+                            神经系统<br/>Nervous system
+                          </td>
+                          <td className="border border-black p-2"></td>
+                        </tr>
+                        <tr className="h-[80px]">
+                          <td className="border border-black p-2 text-center">
+                            其他所见<br/>Other abnormal findings
+                          </td>
+                          <td colSpan={5} className="border border-black p-2"></td>
+                        </tr>
+                        <tr className="h-[180px]">
+                          <td className="border border-black p-2 text-center">
+                            胸部X线<br/>检查结果<br/>(附检查报告单)<br/>Chest X-ray exam<br/>(attached chest X-ray report)
+                          </td>
+                          <td colSpan={2} className="border border-black p-2"></td>
+                          <td className="border border-black p-2 text-center">
+                            心电图<br/>ECC
+                          </td>
+                          <td colSpan={2} className="border border-black p-2"></td>
+                        </tr>
+                        <tr className="h-[200px]">
+                          <td className="border border-black p-2 text-center">
+                            化验室检查<br/>(包括艾滋病、<br/>梅毒等血清学检查)<br/>Laboratory exam<br/>(attached test report of<br/>AIDS, Syphilis etc)
+                          </td>
+                          <td colSpan={5} className="border border-black p-2"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <div className="mt-6 border border-black p-4">
+                      <p className="text-center font-bold mb-2">未发现患有下列检疫传染病和危害公共健康的疾病：</p>
+                      <div className="flex justify-between items-center mb-4">
+                        <p className="text-[10pt]">None of the following diseases of disorders found during the present examination.</p>
+                        <p className="font-bold text-[12pt] mr-10">YES</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-x-12 gap-y-1 text-[10pt] max-w-[600px] mx-auto">
+                        <div className="flex justify-between">
+                          <span>霍乱 Cholera</span>
+                          <span>性病 Venereal Disease</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>黄热病 Yellow fever</span>
+                          <span>肺结核 Lung tuberculosis</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>鼠疫 Plague</span>
+                          <span>艾滋病 AIDS</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>麻风 Leprosy</span>
+                          <span>精神病 Psychosis</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 border border-black p-4 min-h-[300px] flex flex-col justify-between">
+                      <div className="flex justify-between">
+                        <div className="space-y-1">
+                          <p className="font-bold">意 见</p>
+                          <p className="text-[9pt]">Suggestion</p>
+                        </div>
+                        <div className="text-center space-y-1 mr-10">
+                          <p className="font-bold">检查单位盖章</p>
+                          <p className="text-[9pt]">Official Stamp</p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-end mt-20">
+                        <div className="space-y-1">
+                          <p className="font-bold">医师签字</p>
+                          <p className="text-[9pt]">Signature of physician</p>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <p className="font-bold">日 期</p>
+                          <p className="text-[9pt]">Date <span className="text-red-600 ml-2">{formDate}</span></p>
                         </div>
                       </div>
                     </div>
@@ -2220,7 +2917,7 @@ function SortableFormField({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const displayValue = field.valueKey && selectedPersonIndex !== null 
+  const displayValue = field.valueKey && selectedPersonIndex !== null && results[selectedPersonIndex]
     ? results[selectedPersonIndex][field.valueKey as keyof CCCDInfo] 
     : field.defaultValue || "";
 
