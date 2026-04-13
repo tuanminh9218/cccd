@@ -82,6 +82,13 @@
   }
 }
 
+.pdf-mode table, 
+.pdf-mode th, 
+.pdf-mode td {
+  border: 0.5pt solid black !important;
+  border-collapse: collapse !important;
+}
+
 .pdf-mode input {
   border: none !important;
   border-bottom: none !important;

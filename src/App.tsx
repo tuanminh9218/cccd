@@ -134,7 +134,37 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<CCCDInfo[]>([]);
+  const [results, setResults] = useState<CCCDInfo[]>([
+    {
+      fullName: 'NGUYỄN VĂN A',
+      dateOfBirth: '12/12/1999',
+      gender: 'Nam',
+      permanentResidence: 'Hà Nội',
+      idNumber: '001099012345',
+      idIssueDate: '01/01/2020',
+      idIssuePlace: 'Cục CS QLHC về TTXH',
+      phoneNumber: '0987654321',
+      email: 'nguyenvana@example.com',
+      occupation: 'Kỹ sư',
+      workplace: 'Công ty ABC',
+      healthInsuranceNumber: 'GD4010123456789',
+      medicalHistory: 'Khỏe mạnh',
+      familyHistory: 'Không có bệnh lý di truyền',
+      height: '170',
+      weight: '65',
+      bmi: '22.5',
+      bloodPressure: '120/80',
+      pulse: '75',
+      visionLeft: '10/10',
+      visionRight: '10/10',
+      hearingLeft: 'Bình thường',
+      hearingRight: 'Bình thường',
+      generalCondition: 'Tốt',
+      conclusion: 'Đủ sức khỏe làm việc',
+      date: new Date().toLocaleDateString('vi-VN'),
+      status: 'completed'
+    }
+  ]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
@@ -243,7 +273,7 @@ export default function App() {
     { id: 'row-3', tt: 3, label: "Khám Nội khoa (Tim, Phổi, NT, Bệnh Tiêu hóa, Bệnh Thận,....)", result: "", doctor: "" },
     { id: 'row-4', tt: 4, label: "Khám Ngoại khoa - Da liễu - Tâm thần kinh - Cơ xương khớp....", result: "", doctor: "" },
     { id: 'row-5', tt: 5, label: "Khám Tai - Mũi - Họng", result: "", doctor: "" },
-    { id: 'row-6', tt: 6, label: "Khám về Mắt", result: "Thị lực: MP: ........ MT: ........ \nBệnh về mắt: ........", doctor: "" },
+    { id: 'row-6', tt: 6, label: "Khám về Mắt", result: "Thị lực không kính:\nA. 10/10\nB. 9/10\nC. 8/10\nD. Khác", doctor: "" },
     { id: 'row-7', tt: 7, label: "Khám Răng - Hàm - Mặt", result: "", doctor: "" },
     { id: 'row-8', tt: 8, label: "Khám Điện tâm đồ (điện tim)", result: "", doctor: "" },
     { id: 'row-9', tt: 9, label: "Kết quả X-Quang tim phổi", result: "", doctor: "" },
@@ -885,7 +915,7 @@ export default function App() {
     element.classList.add('pdf-mode');
 
     const opt = {
-      margin: 0,
+      margin: [15, 20, 15, 20], // Top, Left, Bottom, Right (in mm) - matches 1.5cm and 2cm
       filename: `Mau_Kham_Suc_Khoe_${selectedPersonIndex !== null ? results[selectedPersonIndex].fullName.replace(/\s+/g, '_') : 'Template'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -893,7 +923,7 @@ export default function App() {
         useCORS: true, 
         logging: false, 
         letterRendering: true,
-        windowWidth: 1200
+        windowWidth: 800
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -912,14 +942,14 @@ export default function App() {
     element.classList.add('pdf-mode');
 
     const opt = {
-      margin: 0,
+      margin: [15, 20, 15, 20],
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         logging: false, 
         letterRendering: true,
-        windowWidth: 1200
+        windowWidth: 800
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -1273,39 +1303,38 @@ export default function App() {
                 {/* The Form Content (Matching PDF Page 1) */}
                 <div id="medical-form-to-print" className="mx-auto print:p-0 print:border-0 print:shadow-none" style={{ width: '210mm', fontFamily: '"Times New Roman", Times, serif', color: '#000' }}>
                   {/* Page 1: TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative overflow-hidden print:border-0 print:shadow-none" style={{ width: '210mm', height: '297mm' }}>
-                    {/* Official Header */}
-                    <div className="flex items-start mb-6">
-                      {/* Left: Logo & Number */}
-                      <div className="text-center w-[140px] flex-shrink-0">
-                        <div className="flex flex-col items-center gap-1 mb-1 mt-0">
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none" style={{ width: '210mm', minHeight: '297mm' }}>
+                    {/* Official Header - Using a table-like structure for stable alignment */}
+                    <div className="flex justify-between items-start mb-6 w-full">
+                      <div className="w-[180px] text-center">
+                        <div className="flex flex-col items-center">
                           {customLogo ? (
-                            <img src={customLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
+                            <img src={customLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
                           ) : selectedLogo ? (
-                            <img src={selectedLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
+                            <img src={selectedLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
                           ) : globalLogo ? (
-                            <img src={globalLogo} alt="Logo" className="max-w-[130px] max-h-[60px] w-auto h-auto pl-[6px] object-contain -mt-[7px]" referrerPolicy="no-referrer" />
+                            <img src={globalLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
                           ) : (
-                            <div className="w-[130px] h-[60px] pl-[6px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl -mt-[7px]">MP</div>
+                            <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
                           )}
+                          <p className="font-bold text-[11pt] mt-1 uppercase">BỆNH VIỆN ĐHYD</p>
+                          <p className="text-[10pt]">Số: .........../KHTH</p>
                         </div>
-                        <p className="text-[10pt] -mt-[11px]">Số: .........../KHTH</p>
                       </div>
-
-                      {/* Right: Title Section */}
-                      <div className="flex-1 text-center">
+                      <div className="flex-1 text-center px-4">
                         <h1 className="text-[16pt] font-bold uppercase leading-tight">TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE CỦA NGƯỜI ĐI LAO ĐỘNG, HỌC TẬP VÀ CÔNG TÁC NƯỚC NGOÀI</h1>
                         <p className="text-[12pt] font-bold uppercase mt-1">MẪU SONG NGỮ</p>
                         <p className="italic text-[10pt] mt-1">Bản lưu tại BV ĐHYD</p>
                       </div>
+                      <div className="w-[180px]"></div> {/* Spacer to keep title centered */}
                     </div>
 
-                    {/* Photo Box 4x6 (Positioned below Logo/Số) */}
-                    <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] pl-2 pr-2 -ml-[25px] -mt-[53px] mb-0 mr-0 pt-2 h-[188.994px] w-[136px]" style={{ top: '40mm', left: '20mm' }}>
+                    {/* Photo Box 4x6 - Better integrated */}
+                    <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '50mm', left: '15mm' }}>
                       Ảnh 4x6
                     </div>
 
-                    <div className="flex flex-wrap gap-y-1 text-[12pt] mb-6 w-[560px] pl-0 pt-0 -mt-[22px] ml-[160px]">
+                    <div className="flex flex-wrap gap-y-1 text-[12pt] mb-6 w-[560px] ml-[160px]">
                       <DndContext 
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -1391,14 +1420,12 @@ export default function App() {
                         <p className="mt-1 flex items-baseline gap-2">Chi tiết lý do: <span className="border-b border-dotted border-black flex-1 pb-[2px]">......................................................................................................</span></p>
                       </div>
                       
-                      <div className="grid grid-cols-2 mt-8">
-                        <div className="text-center">
-                          <p className="font-bold uppercase mb-16">GIÁM ĐỐC BỆNH VIỆN</p>
-                          <p className="font-bold">(Ký tên, đóng dấu)</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="italic mb-1">BẮC NINH, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</p>
-                          <p className="font-bold uppercase mb-16">KT. TRƯỞNG PHÒNG KHTH</p>
+                      {/* Signature Section - Using a table-like structure for right alignment */}
+                      <div className="flex justify-end mt-8">
+                        <div className="w-[350px] text-center space-y-1">
+                          <p className="italic">BẮC NINH, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</p>
+                          <p className="font-bold uppercase">KT. TRƯỞNG PHÒNG KHTH</p>
+                          <div className="h-24"></div> {/* Signature space */}
                           <p className="font-bold flex items-baseline gap-2 justify-center">BS. <span className="border-b border-dotted border-black w-40 pb-[2px]">&nbsp;</span></p>
                         </div>
                       </div>
@@ -1406,21 +1433,23 @@ export default function App() {
                   </div>
 
                   {/* Page 2: PHIẾU KẾT QUẢ ĐIỆN TIM (ECG) */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative overflow-hidden print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', height: '297mm', pageBreakBefore: 'always' }}>
-                    {/* ECG Header */}
-                    <div className="flex justify-between items-start mb-8">
-                      <div className="text-left">
+                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                    {/* ECG Header - Table structure for alignment */}
+                    <div className="flex justify-between items-start mb-8 w-full">
+                      <div className="text-left w-[250px]">
                         <p className="font-bold text-[11pt] uppercase">MPUH BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                        <p className="text-[10pt]">Số: .........../KHTH</p>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center flex-1">
                         <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
                         <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
                         <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
                       </div>
+                      <div className="w-[250px]"></div> {/* Spacer */}
                     </div>
 
                     <div className="text-center mb-8">
-                      <h2 className="text-[16pt] font-bold uppercase">PHIẾU KẾT QUẢ ĐIỆN TIM (ECG)</h2>
+                      <h2 className="text-[18pt] font-bold uppercase">PHIẾU KẾT QUẢ ĐIỆN TIM (ECG)</h2>
                     </div>
 
                     {/* ECG Patient Info */}
@@ -1458,7 +1487,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
+                        <tr style={{ pageBreakInside: 'avoid' }}>
                           <td className="border border-black py-4 px-4 font-bold">1. Điện tim</td>
                           <td className="border border-black py-4 px-4 italic text-center">
                             {isEditingForm ? (
@@ -1473,16 +1502,17 @@ export default function App() {
                       </tbody>
                     </table>
 
-                    {/* ECG Footer */}
-                    <div className="mt-6 text-[12pt]">
+                    {/* ECG Footer - Right aligned */}
+                    <div className="mt-8 text-[12pt]">
                       <p className="font-bold mb-2">Nhận xét khác của bác sĩ (Doctor's other comments):</p>
                       <p className="border-b border-dotted border-black w-full pb-1">&nbsp;</p>
                       <p className="border-b border-dotted border-black w-full pb-1 mt-2">&nbsp;</p>
                       
                       <div className="flex justify-end mt-10">
-                        <div className="text-center w-64">
-                          <p className="italic mb-2">Ngày (Date) 10/04/2026</p>
-                          <p className="font-bold uppercase mb-20">Bác sĩ (Doctor)</p>
+                        <div className="text-center w-[300px] space-y-1">
+                          <p className="italic">Ngày (Date) {new Date().getDate()}/{new Date().getMonth() + 1}/{new Date().getFullYear()}</p>
+                          <p className="font-bold uppercase">Bác sĩ (Doctor)</p>
+                          <div className="h-24"></div>
                           <p className="font-bold">................................................</p>
                         </div>
                       </div>
@@ -2198,7 +2228,7 @@ function SortableFormField({
     <div 
       ref={setNodeRef} 
       className={`flex items-baseline gap-2 group relative ${isEditing ? 'hover:bg-blue-50/50 rounded p-1 -m-1' : ''}`}
-      style={{ ...style, minHeight: '24px', width: field.width || '100%' }}
+      style={{ ...style, minHeight: '24px', width: field.width || '100%', pageBreakInside: 'avoid' }}
     >
       {isEditing && (
         <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-blue-500">
@@ -2289,8 +2319,8 @@ function SortableTableRow({
   }, [row.doctor]);
 
   return (
-    <tr ref={setNodeRef} style={style} className={isDragging ? 'bg-blue-50' : ''}>
-      <td className="border border-black py-2 px-1 text-center font-bold relative align-middle">
+    <tr ref={setNodeRef} style={{ ...style, pageBreakInside: 'avoid' }} className={isDragging ? 'bg-blue-50' : ''}>
+      <td className="border border-black py-1 px-1 text-center font-bold relative align-middle">
         {isEditing && (
           <div {...attributes} {...listeners} className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-blue-500">
             <GripVertical className="w-3 h-3" />
@@ -2298,7 +2328,7 @@ function SortableTableRow({
         )}
         {row.tt}
       </td>
-      <td className="border border-black py-2 px-1 align-middle">
+      <td className="border border-black py-1 px-1 align-middle">
         {isEditing ? (
           <input 
             type="text" 
@@ -2308,7 +2338,7 @@ function SortableTableRow({
           />
         ) : row.label}
       </td>
-      <td className="border border-black py-2 px-1 italic text-slate-400 whitespace-pre-line align-middle">
+      <td className="border border-black py-1 px-1 italic text-slate-400 whitespace-pre-line align-middle">
         {isEditing ? (
           <input 
             type="text" 
@@ -2318,7 +2348,7 @@ function SortableTableRow({
           />
         ) : row.result}
       </td>
-      <td className="border border-black py-2 px-1 relative align-middle">
+      <td className="border border-black py-1 px-1 relative align-middle">
         <div className="flex flex-col gap-1">
           <input 
             type="text" 
