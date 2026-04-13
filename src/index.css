@@ -70,11 +70,26 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 100% !important;
+    width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+  }
+  #medical-form-to-print table, 
+  #medical-form-to-print th, 
+  #medical-form-to-print td {
+    border: 0.5pt solid black !important;
+    border-collapse: collapse !important;
+    visibility: visible !important;
+  }
+  #medical-form-to-print input {
+    border: none !important;
+    border-bottom: none !important;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    visibility: visible !important;
   }
   @page {
     size: A4;

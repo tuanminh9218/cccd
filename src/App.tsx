@@ -1361,7 +1361,7 @@ export default function App() {
                       {isEditingForm && (
                         <button 
                           onClick={addFormField}
-                          className="flex items-center gap-1 text-blue-600 text-[10pt] font-bold hover:text-blue-700 transition-colors mt-2"
+                          className="flex items-center gap-1 text-blue-600 text-[10pt] font-bold hover:text-blue-700 transition-colors mt-2 print:hidden"
                         >
                           <Plus className="w-4 h-4" />
                           Thêm trường thông tin
@@ -1406,7 +1406,7 @@ export default function App() {
                       {isEditingForm && (
                         <button 
                           onClick={addTableRow}
-                          className="flex items-center gap-1 text-blue-600 text-[10pt] font-bold hover:text-blue-700 transition-colors mt-2"
+                          className="flex items-center gap-1 text-blue-600 text-[10pt] font-bold hover:text-blue-700 transition-colors mt-2 print:hidden"
                         >
                           <Plus className="w-4 h-4" />
                           Thêm hàng mới
@@ -2231,7 +2231,7 @@ function SortableFormField({
       style={{ ...style, minHeight: '24px', width: field.width || '100%', pageBreakInside: 'avoid' }}
     >
       {isEditing && (
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-blue-500">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-blue-500 print:hidden">
           <GripVertical className="w-3 h-3" />
         </div>
       )}
@@ -2265,7 +2265,7 @@ function SortableFormField({
       {isEditing && (
         <button 
           onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-all print:hidden"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -2322,7 +2322,7 @@ function SortableTableRow({
     <tr ref={setNodeRef} style={{ ...style, pageBreakInside: 'avoid' }} className={isDragging ? 'bg-blue-50' : ''}>
       <td className="border border-black py-1 px-1 text-center font-bold relative align-middle">
         {isEditing && (
-          <div {...attributes} {...listeners} className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-blue-500">
+          <div {...attributes} {...listeners} className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-blue-500 print:hidden">
             <GripVertical className="w-3 h-3" />
           </div>
         )}
@@ -2358,7 +2358,7 @@ function SortableTableRow({
             className={`w-full bg-transparent text-[8pt] focus:outline-none ${isDoctorDirty ? 'border-b border-blue-400' : ''}`}
           />
           {isDoctorDirty && (
-            <div className="flex gap-1 justify-end">
+            <div className="flex gap-1 justify-end print:hidden">
               <button 
                 onClick={handleSaveDoctor}
                 className="p-0.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
