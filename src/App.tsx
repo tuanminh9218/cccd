@@ -1529,78 +1529,80 @@ export default function App() {
                     <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none" style={{ width: '210mm', minHeight: '297mm', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                       {/* Header */}
                       <div className="flex justify-between items-start mb-4 w-full">
-                        <div className="w-[200px]">
+                        <div className="w-[250px]">
                           <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
                             {customLogo ? (
-                              <img src={customLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={customLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : selectedLogo ? (
-                              <img src={selectedLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={selectedLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : globalLogo ? (
-                              <img src={globalLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={globalLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : (
                               <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
                             )}
                           </div>
-                          <p className="font-bold text-[10pt] mt-1 text-blue-800">BỆNH VIỆN ĐHYD</p>
+                          <h1 className="font-bold text-[19px] mt-[16px] text-blue-800">BỆNH VIỆN ĐẠI HỌC Y DƯỢC</h1>
                           <p className="text-[7pt] text-blue-800 italic">MEDICAL AND PHARMACEUTICAL UNIVERSITY HOSPITAL</p>
                         </div>
                         <div className="text-center">
-                          <p className="font-bold text-[11pt] uppercase">SOCIALIST REPUBLIC OF VIET NAM</p>
+                          <p className="font-bold text-[11pt] uppercase">SOCIALIST REPUBLIC OF VIETE NAM</p>
                           <p className="font-bold text-[11pt] uppercase border-b border-black inline-block pb-0.5">INDEPENDENCE FREEDOM - HAPPINESS</p>
                         </div>
                       </div>
 
-                      <div className="text-center mb-8">
+                    <div className="text-center mb-6 mt-[-20px]">
                         <p className="font-bold text-[12pt] uppercase">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
                         <p className="font-bold text-[11pt] border-b border-black inline-block pb-0.5">Độc lập - Tự do - Hạnh phúc</p>
                         
-                        <h1 className="text-[18pt] font-bold mt-6 uppercase">HEALTH CERTIFICATE</h1>
-                        <h2 className="text-[14pt] font-bold uppercase">GIẤY CHỨNG NHẬN SỨC KHOẺ</h2>
+                        <div className="mt-8">
+                          <h1 className="text-[19px] font-bold uppercase">HEALTH CERTIFICATE</h1>
+                          <h2 className="text-[14pt] font-bold uppercase">GIẤY CHỨNG NHẬN SỨC KHOẺ</h2>
+                        </div>
                       </div>
 
                       {/* Photo Box */}
-                      <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '55mm', left: '20mm' }}>
+                      <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '45mm', left: '20mm' }}>
                         Ảnh 4x6
                       </div>
 
                       {/* Personal Info */}
-                      <div className="ml-[160px] space-y-2 text-[11pt]">
+                      <div className="ml-[140px] mt-4 space-y-2 text-[11pt]">
                         <p className="flex items-baseline gap-2">
-                          FULL NAME (TÊN ĐẦY ĐỦ): 
+                          <span style={{ width: '130px', fontSize: '13.6667px' }}>FULL NAME (TÊN ĐẦY ĐỦ):</span> 
                           <span className="border-b border-dotted border-black flex-1 font-bold text-blue-700 uppercase">
-                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].fullName) : '......................................................................................................'}
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].fullName) : '..................................................................................................................................................................'}
                           </span>
                         </p>
                         <div className="flex gap-4">
                           <p className="flex items-baseline gap-2 flex-1">
-                            DATE OF BIRTH (NGÀY THÁNG NĂM SINH): 
+                            <span style={{ width: '400px' }}>DATE OF BIRTH (NGÀY THÁNG NĂM SINH):</span> 
                             <span className="border-b border-dotted border-black flex-1 text-center">
-                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..............................'}
+                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..................................................................'}
                             </span>
                           </p>
-                          <p className="flex items-baseline gap-2 w-[200px]">
+                          <p className="flex items-baseline gap-2 w-[300px]">
                             SEX (GIỚI TÍNH): 
                             <span className="border-b border-dotted border-black flex-1 text-center">
-                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................'}
+                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................................................'}
                             </span>
                           </p>
                         </div>
                         <p className="flex items-baseline gap-2">
                           NATIONALITY (QUỐC TỊCH): 
                           <span className="border-b border-dotted border-black flex-1 text-center">
-                            {(selectedPersonIndex !== null && results[selectedPersonIndex] && (results[selectedPersonIndex] as any).nationality) ? (results[selectedPersonIndex] as any).nationality : '................'}
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex] && (results[selectedPersonIndex] as any).nationality) ? (results[selectedPersonIndex] as any).nationality : '..................................................................................................................................................................'}
                           </span>
                         </p>
                         <p className="flex items-baseline gap-2">
                           ADDRESS (ĐỊA CHỈ): 
                           <span className="border-b border-dotted border-black flex-1 uppercase">
-                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence) : '......................................................................................................'}
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence) : '..................................................................................................................................................................'}
                           </span>
                         </p>
                       </div>
 
                       {/* Health Prehistory */}
-                      <div className="mt-8">
+                      <div className="mt-6">
                         <h3 className="text-center font-bold text-[12pt] uppercase">HEALTH PREHISTORY (TIỂU SỬ SỨC KHỎE)</h3>
                         <div className="mt-2 space-y-2">
                           <p className="border-b border-dotted border-black w-full pb-1">......................................................................................................................................................................................................................................................</p>
@@ -1609,23 +1611,23 @@ export default function App() {
                       </div>
 
                       {/* General Examination */}
-                      <div className="mt-8">
+                      <div className="mt-6">
                         <h3 className="text-center font-bold text-[12pt] uppercase">GENERAL EXAMINATION (PHẦN KHÁM)</h3>
                         <div className="mt-4 space-y-3 text-[11pt]">
                           <div className="flex gap-8">
                             <p className="flex items-baseline gap-2 flex-1">
-                              HEIGHT(CHIỀU CAO): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              HEIGHT(CHIỀU CAO): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                             <p className="flex items-baseline gap-2 flex-1">
-                              WEIGHT (NẶNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              WEIGHT (NẶNG): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                           </div>
                           <div className="flex gap-8">
                             <p className="flex items-baseline gap-2 flex-1">
-                              PULSE (MẠCH): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              PULSE (MẠCH): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                             <p className="flex items-baseline gap-2 flex-1">
-                              BLOOD PRESSURE (HUYẾT ÁP): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              BLOOD PRESSURE (HUYẾT ÁP): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                           </div>
                           <div className="space-y-1">
@@ -1633,19 +1635,19 @@ export default function App() {
                             <div className="pl-4 space-y-1">
                               <p className="flex items-baseline gap-2">
                                 VISUAL ABILITY (THỊ LỰC): NOGLASSES (KHÔNG KÍNH): 
-                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
-                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-24 inline-block"></span></span>
+                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-24 inline-block"></span></span>
                               </p>
                               <p className="flex items-baseline gap-2">
                                 <span className="ml-[185px]">WITH GLASSES (CÓ KÍNH):</span>
-                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
-                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-24 inline-block"></span></span>
+                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-24 inline-block"></span></span>
                               </p>
                               <p className="flex items-baseline gap-2">
-                                COLOUR VISION (THỊ LỰC MÀU): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                                COLOUR VISION: (THỊ LỰC MÀU): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
                               </p>
                             </div>
-                            <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                            <p className="text-right italic pr-0">DOCTOR:................................................................................................................................................</p>
                           </div>
 
                           <div className="space-y-1">
@@ -1658,55 +1660,55 @@ export default function App() {
                                 - WHISPER (NGHE NÓI NHỎ): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
                               </p>
                             </div>
-                            <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                            <p className="text-right italic pr-0">DOCTOR:................................................................................................................................................</p>
                           </div>
 
                           <div className="flex gap-8">
                             <p className="flex items-baseline gap-2 flex-1">
-                              NOSE (MŨI): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              NOSE (MŨI): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                             <p className="flex items-baseline gap-2 flex-1">
-                              THROAT (HỌNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              THROAT (HỌNG): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                           </div>
                           <div className="flex gap-8">
                             <p className="flex items-baseline gap-2 flex-1">
-                              TONGUE (LƯỠI): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              TONGUE (LƯỠI): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                             <p className="flex items-baseline gap-2 flex-1">
-                              TEETH (RĂNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                              TEETH (RĂNG): <span className="border-b border-dotted border-black flex-1">................................................</span>
                             </p>
                           </div>
-                          <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                          <p className="text-right italic pr-0">DOCTOR:................................................................................................................................................</p>
 
                           <p className="flex items-baseline gap-2">
                             SKIN DISEASE (BỆNH NGOÀI DA): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
                           </p>
-                          <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                          <p className="text-right italic pr-0">DOCTOR:................................................................................................................................................</p>
 
                           <div className="space-y-1">
                             <p>MOVEMENT SYSTEM (HỆ VẬN ĐỘNG):</p>
                             <div className="pl-4 space-y-1">
                               <p className="flex items-baseline gap-2">
-                                - ACHILLES TENDON REFLEX (PHẢN XA GÂN CỐT): <span className="border-b border-dotted border-black flex-1">..................................................................................</span>
+                                <span style={{ width: '400px', fontSize: '16.6667px' }}>- ACHILLES TENDON REFLEX (PHẢN XẠ GÂN CỐT):</span> <span className="border-b border-dotted border-black flex-1">..................................................................................</span>
                               </p>
                               <p className="flex items-baseline gap-2">
-                                - SKELETON (XƯƠNG): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                                <span style={{ fontSize: '16.3333px' }}>- SKELETON (XƯƠNG):</span> <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
                               </p>
                               <div className="flex gap-8">
                                 <p className="flex items-baseline gap-2 flex-1">
-                                  + SKULL (SỌ NÃO): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                  + SKULL (SỌ NÃO): <span className="border-b border-dotted border-black flex-1">................................................</span>
                                 </p>
                                 <p className="flex items-baseline gap-2 flex-1">
-                                  ERTEBRAL COLUMN (CỘT SỐNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                  ERTEBRAL COLUMN (CỘT SỐNG): <span className="border-b border-dotted border-black flex-1">................................................</span>
                                 </p>
                               </div>
                               <div className="flex gap-8">
                                 <p className="flex items-baseline gap-2 flex-1">
-                                  + ARMS (TAY): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                  + ARMS (TAY): <span className="border-b border-dotted border-black flex-1">................................................</span>
                                 </p>
                                 <p className="flex items-baseline gap-2 flex-1">
-                                  LEGS (CHÂN): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                  LEGS (CHÂN): <span className="border-b border-dotted border-black flex-1">................................................</span>
                                 </p>
                               </div>
                             </div>
@@ -2803,10 +2805,10 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </section>
+              </section>
             ) : (
               <>
                 {/* Left Column: Upload & Preview (Reduced Size) */}
