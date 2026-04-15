@@ -143,37 +143,7 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<CCCDInfo[]>([
-    {
-      fullName: 'NGUYỄN VĂN A',
-      dateOfBirth: '12/12/1999',
-      gender: 'Nam',
-      permanentResidence: 'Hà Nội',
-      idNumber: '001099012345',
-      idIssueDate: '01/01/2020',
-      idIssuePlace: 'Cục CS QLHC về TTXH',
-      phoneNumber: '0987654321',
-      email: 'nguyenvana@example.com',
-      occupation: 'Kỹ sư',
-      workplace: 'Công ty ABC',
-      healthInsuranceNumber: 'GD4010123456789',
-      medicalHistory: 'Khỏe mạnh',
-      familyHistory: 'Không có bệnh lý di truyền',
-      height: '170',
-      weight: '65',
-      bmi: '22.5',
-      bloodPressure: '120/80',
-      pulse: '75',
-      visionLeft: '10/10',
-      visionRight: '10/10',
-      hearingLeft: 'Bình thường',
-      hearingRight: 'Bình thường',
-      generalCondition: 'Tốt',
-      conclusion: 'Đủ sức khỏe làm việc',
-      date: new Date().toLocaleDateString('vi-VN'),
-      status: 'completed'
-    }
-  ]);
+  const [results, setResults] = useState<CCCDInfo[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
@@ -209,6 +179,143 @@ export default function App() {
     const today = new Date();
     return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
   });
+
+  // Table Resizing State
+  const [vnTableCols, setVnTableCols] = useState([26, 224.891, 230, 120]);
+  const [vnRowHeights, setVnRowHeights] = useState<Record<string, number>>({
+    'row-1': 35,
+    'row-2': 35,
+    'row-5': 35,
+    'row-7': 35,
+    'row-8': 35,
+    'row-9': 35,
+    'row-10': 35,
+    'row-11': 35
+  });
+  const [ecgCols, setEcgCols] = useState([400, 300]);
+  const [xrayCols, setXrayCols] = useState([350, 350]);
+  const [labCols, setLabCols] = useState([40, 250, 120, 150, 80]);
+  const [chineseCols, setChineseCols] = useState([80, 200, 60, 120, 100, 100, 150]);
+  const [chineseCols2, setChineseCols2] = useState([100, 200, 100, 200, 100, 150]);
+
+  const resetTableLayouts = () => {
+    setVnTableCols([26, 224.891, 230, 120]);
+    setVnRowHeights({
+      'row-1': 35,
+      'row-2': 35,
+      'row-5': 35,
+      'row-7': 35,
+      'row-8': 35,
+      'row-9': 35,
+      'row-10': 35,
+      'row-11': 35
+    });
+    setEcgCols([400, 300]);
+    setXrayCols([350, 350]);
+    setLabCols([40, 250, 120, 150, 80]);
+    setChineseCols([80, 200, 60, 120, 100, 100, 150]);
+    setChineseCols2([100, 200, 100, 200, 100, 150]);
+  };
+
+  const resizingRef = useRef<{
+    type: 'col' | 'row';
+    index: number;
+    id?: string;
+    startX: number;
+    startY: number;
+    startSize: number;
+    tableId: string;
+  } | null>(null);
+
+  const handleResizeStart = (
+    e: React.MouseEvent, 
+    type: 'col' | 'row', 
+    index: number, 
+    startSize: number, 
+    tableId: string,
+    id?: string
+  ) => {
+    if (!isEditingForm) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    resizingRef.current = {
+      type,
+      index,
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      startSize,
+      tableId
+    };
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const { type, index, id, startX, startY, startSize, tableId } = resizingRef.current;
+      
+      if (type === 'col') {
+        const delta = moveEvent.clientX - startX;
+        const newWidth = Math.max(30, startSize + delta);
+        
+        if (tableId === 'vnSummary') {
+          setVnTableCols(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        } else if (tableId === 'ecg') {
+          setEcgCols(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        } else if (tableId === 'xray') {
+          setXrayCols(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        } else if (tableId === 'lab') {
+          setLabCols(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        } else if (tableId === 'chinese') {
+          setChineseCols(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        } else if (tableId === 'chinese2') {
+          setChineseCols2(prev => {
+            const next = [...prev];
+            next[index] = newWidth;
+            return next;
+          });
+        }
+      } else if (type === 'row') {
+        const delta = moveEvent.clientY - startY;
+        const newHeight = Math.max(25, startSize + delta);
+        
+        if (tableId === 'vnSummary' && id) {
+          setVnRowHeights(prev => ({
+            ...prev,
+            [id]: newHeight
+          }));
+        }
+      }
+    };
+    
+    const handleMouseUp = () => {
+      resizingRef.current = null;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
   
   // Firebase Auth Listener
   React.useEffect(() => {
@@ -289,23 +396,23 @@ export default function App() {
     { id: 'field-1', label: 'Họ và tên:', valueKey: 'fullName' as keyof CCCDInfo, isBold: true, uppercase: true, width: '70%' },
     { id: 'field-2', label: 'Giới tính:', valueKey: 'gender' as keyof CCCDInfo, defaultValue: 'Nam', isBold: true, width: '30%' },
     { id: 'field-3', label: 'Ngày tháng năm sinh:', valueKey: 'dateOfBirth' as keyof CCCDInfo, isBold: true, width: '100%' },
-    { id: 'field-4', label: 'Địa chỉ:', valueKey: 'permanentResidence' as keyof CCCDInfo, isBold: true, width: '100%' },
-    { id: 'field-5', label: 'Tên cơ quan tuyển dụng:', defaultValue: 'CTY NGUYÊN KHÔI', isBold: true, width: '100%' },
-    { id: 'field-6', label: 'Công nhân đi lao động tại:', defaultValue: 'TRUNG QUỐC', isBold: true, width: '100%' },
+    { id: 'field-4', label: 'Địa chỉ:', valueKey: 'permanentResidence' as keyof CCCDInfo, defaultValue: 'Hà Nội', isBold: true, width: '100%' },
+    { id: 'field-5', label: 'Tên cơ quan tuyển dụng:', defaultValue: '', isBold: true, width: '100%' },
+    { id: 'field-6', label: 'Công nhân đi lao động tại:', defaultValue: '', isBold: true, width: '100%' },
   ]);
   const [tableRows, setTableRows] = useState([
-    { id: 'row-1', tt: 1, label: "Chiều cao, cân nặng", result: "Cao: ........ cm. / Nặng: ........ kg", doctor: "" },
-    { id: 'row-2', tt: 2, label: "Mạch, huyết áp", result: "Mạch: ........ l/p. / Huyết áp: ........ mmHg", doctor: "" },
+    { id: 'row-1', tt: 1, label: "Chiều cao, cân nặng", result: "Cao: ........ cm. / Nặng: ........ kg", doctor: "", isBoldResult: true },
+    { id: 'row-2', tt: 2, label: "Mạch, huyết áp", result: "Mạch: ........ l/p. / Huyết áp: ........ mmHg", doctor: "", isBoldResult: true },
     { id: 'row-3', tt: 3, label: "Khám Nội khoa (Tim, Phổi, NT, Bệnh Tiêu hóa, Bệnh Thận,....)", result: "", doctor: "" },
     { id: 'row-4', tt: 4, label: "Khám Ngoại khoa - Da liễu - Tâm thần kinh - Cơ xương khớp....", result: "", doctor: "" },
     { id: 'row-5', tt: 5, label: "Khám Tai - Mũi - Họng", result: "", doctor: "" },
-    { id: 'row-6', tt: 6, label: "Khám về Mắt", result: "Thị lực không kính:\nA. 10/10\nB. 9/10\nC. 8/10\nD. Khác", doctor: "" },
+    { id: 'row-6', tt: 6, label: "Khám về Mắt", result: "Thị lực MP:........... MT:........... \nBệnh về mắt:...........................................", doctor: "", isBoldResult: true },
     { id: 'row-7', tt: 7, label: "Khám Răng - Hàm - Mặt", result: "", doctor: "" },
     { id: 'row-8', tt: 8, label: "Khám Điện tâm đồ (điện tim)", result: "", doctor: "" },
     { id: 'row-9', tt: 9, label: "Kết quả X-Quang tim phổi", result: "", doctor: "" },
     { id: 'row-10', tt: 10, label: "Siêu âm ổ bụng tổng quát", result: "", doctor: "" },
     { id: 'row-11', tt: 11, label: "Kết quả XN nước tiểu (thường quy, có thai sớm)", result: "", doctor: "" },
-    { id: 'row-12', tt: 12, label: "XN máu (HIV, HBsAg, VDRL...)", result: "Nhóm máu: [ ]", doctor: "" },
+    { id: 'row-12', tt: 12, label: "XN máu (HIV, HBsAg, VDRL...)\nNhóm máu: [    ]", result: "", doctor: "" },
   ]);
   const [topProvinces, setTopProvinces] = useState(['Hà Nội', 'TP.HCM mở rộng', 'Đà Nẵng', 'Hải Phòng']);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -941,7 +1048,7 @@ export default function App() {
     element.classList.add('pdf-mode');
 
     const opt = {
-      margin: [15, 20, 15, 20], // Top, Left, Bottom, Right (in mm) - matches 1.5cm and 2cm
+      margin: 0,
       filename: `Mau_Kham_Suc_Khoe_${(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].fullName.replace(/\s+/g, '_') : 'Template'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -968,7 +1075,7 @@ export default function App() {
     element.classList.add('pdf-mode');
 
     const opt = {
-      margin: [15, 20, 15, 20],
+      margin: 0,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
@@ -1076,7 +1183,7 @@ export default function App() {
                           key={lang}
                           onClick={() => {
                             setSelectedLanguage(lang);
-                            if (lang === 'Tiếng Việt') {
+                            if (lang === 'Tiếng Việt' || lang === 'Tiếng Anh') {
                               setShowMedicalForm(true);
                               if (selectedPersonIndex === null && results.length > 0) {
                                 setSelectedPersonIndex(0);
@@ -1341,8 +1448,8 @@ export default function App() {
 
           <div className="flex flex-col lg:flex-row gap-2 items-start flex-1">
             {showMedicalForm ? (
-              <section className="flex-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm overflow-y-auto custom-scrollbar" style={{ maxHeight: '85vh' }}>
-                <div className="sticky top-0 bg-white z-50 flex items-center justify-between mb-3 border-b pb-2 pt-1">
+              <section className="flex-1 bg-slate-100 p-4 rounded-2xl border border-slate-200 shadow-inner overflow-y-auto custom-scrollbar" style={{ maxHeight: '85vh' }}>
+                <div className="sticky top-0 bg-slate-100/80 backdrop-blur-sm z-50 flex items-center justify-between mb-4 border-b border-slate-200 pb-2 pt-1">
                   <div>
                     <h2 className="text-sm font-bold text-slate-800">Mẫu Khám Sức Khỏe</h2>
                     <p className="text-[10px] text-slate-500">Chọn người từ danh sách để điền tự động</p>
@@ -1368,6 +1475,16 @@ export default function App() {
                         className="text-[10px] bg-transparent focus:outline-none text-slate-600 font-medium w-20"
                       />
                     </div>
+                    {isEditingForm && (
+                      <button 
+                        onClick={resetTableLayouts}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold rounded-lg transition-all shadow-sm"
+                        title="Đặt lại kích thước bảng"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Reset Table
+                      </button>
+                    )}
                     <button 
                       onClick={() => setIsEditingForm(!isEditingForm)}
                       className={`flex items-center gap-1.5 px-3 py-1 ${isEditingForm ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'} text-white text-[10px] font-bold rounded-lg transition-all shadow-md shadow-slate-100`}
@@ -1407,11 +1524,203 @@ export default function App() {
 
                 {/* The Form Content (Matching PDF Page 1) */}
                 <div id="medical-form-to-print" className="mx-auto print:p-0 print:border-0 print:shadow-none" style={{ width: '210mm', fontFamily: '"Times New Roman", Times, serif', color: '#000' }}>
-                  {/* Page 1: TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none" style={{ width: '210mm', minHeight: '297mm' }}>
+                  {selectedLanguage === 'Tiếng Anh' ? (
+                    /* Page: HEALTH CERTIFICATE (English/Vietnamese) */
+                    <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none" style={{ width: '210mm', minHeight: '297mm', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-4 w-full">
+                        <div className="w-[200px]">
+                          <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
+                            {customLogo ? (
+                              <img src={customLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : selectedLogo ? (
+                              <img src={selectedLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : globalLogo ? (
+                              <img src={globalLogo} alt="Logo" className="max-w-[150px] max-h-[70px] object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
+                            )}
+                          </div>
+                          <p className="font-bold text-[10pt] mt-1 text-blue-800">BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                          <p className="text-[7pt] text-blue-800 italic">MEDICAL AND PHARMACEUTICAL UNIVERSITY HOSPITAL</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-[11pt] uppercase">SOCIALIST REPUBLIC OF VIET NAM</p>
+                          <p className="font-bold text-[11pt] uppercase border-b border-black inline-block pb-0.5">INDEPENDENCE FREEDOM - HAPPINESS</p>
+                        </div>
+                      </div>
+
+                      <div className="text-center mb-8">
+                        <p className="font-bold text-[12pt] uppercase">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold text-[11pt] border-b border-black inline-block pb-0.5">Độc lập - Tự do - Hạnh phúc</p>
+                        
+                        <h1 className="text-[18pt] font-bold mt-6 uppercase">HEALTH CERTIFICATE</h1>
+                        <h2 className="text-[14pt] font-bold uppercase">GIẤY CHỨNG NHẬN SỨC KHOẺ</h2>
+                      </div>
+
+                      {/* Photo Box */}
+                      <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '55mm', left: '20mm' }}>
+                        Ảnh 4x6
+                      </div>
+
+                      {/* Personal Info */}
+                      <div className="ml-[160px] space-y-2 text-[11pt]">
+                        <p className="flex items-baseline gap-2">
+                          FULL NAME (TÊN ĐẦY ĐỦ): 
+                          <span className="border-b border-dotted border-black flex-1 font-bold text-blue-700 uppercase">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].fullName) : '......................................................................................................'}
+                          </span>
+                        </p>
+                        <div className="flex gap-4">
+                          <p className="flex items-baseline gap-2 flex-1">
+                            DATE OF BIRTH (NGÀY THÁNG NĂM SINH): 
+                            <span className="border-b border-dotted border-black flex-1 text-center">
+                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : '..............................'}
+                            </span>
+                          </p>
+                          <p className="flex items-baseline gap-2 w-[200px]">
+                            SEX (GIỚI TÍNH): 
+                            <span className="border-b border-dotted border-black flex-1 text-center">
+                              {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................'}
+                            </span>
+                          </p>
+                        </div>
+                        <p className="flex items-baseline gap-2">
+                          NATIONALITY (QUỐC TỊCH): 
+                          <span className="border-b border-dotted border-black flex-1 text-center">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex] && (results[selectedPersonIndex] as any).nationality) ? (results[selectedPersonIndex] as any).nationality : '................'}
+                          </span>
+                        </p>
+                        <p className="flex items-baseline gap-2">
+                          ADDRESS (ĐỊA CHỈ): 
+                          <span className="border-b border-dotted border-black flex-1 uppercase">
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence) : '......................................................................................................'}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* Health Prehistory */}
+                      <div className="mt-8">
+                        <h3 className="text-center font-bold text-[12pt] uppercase">HEALTH PREHISTORY (TIỂU SỬ SỨC KHỎE)</h3>
+                        <div className="mt-2 space-y-2">
+                          <p className="border-b border-dotted border-black w-full pb-1">......................................................................................................................................................................................................................................................</p>
+                          <p className="border-b border-dotted border-black w-full pb-1">......................................................................................................................................................................................................................................................</p>
+                        </div>
+                      </div>
+
+                      {/* General Examination */}
+                      <div className="mt-8">
+                        <h3 className="text-center font-bold text-[12pt] uppercase">GENERAL EXAMINATION (PHẦN KHÁM)</h3>
+                        <div className="mt-4 space-y-3 text-[11pt]">
+                          <div className="flex gap-8">
+                            <p className="flex items-baseline gap-2 flex-1">
+                              HEIGHT(CHIỀU CAO): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                            <p className="flex items-baseline gap-2 flex-1">
+                              WEIGHT (NẶNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-8">
+                            <p className="flex items-baseline gap-2 flex-1">
+                              PULSE (MẠCH): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                            <p className="flex items-baseline gap-2 flex-1">
+                              BLOOD PRESSURE (HUYẾT ÁP): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p>EYES (MẮT):</p>
+                            <div className="pl-4 space-y-1">
+                              <p className="flex items-baseline gap-2">
+                                VISUAL ABILITY (THỊ LỰC): NOGLASSES (KHÔNG KÍNH): 
+                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                              </p>
+                              <p className="flex items-baseline gap-2">
+                                <span className="ml-[185px]">WITH GLASSES (CÓ KÍNH):</span>
+                                <span className="ml-4">RIGHT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                                <span className="ml-4">LEFT: <span className="border-b border-dotted border-black w-20 inline-block"></span></span>
+                              </p>
+                              <p className="flex items-baseline gap-2">
+                                COLOUR VISION (THỊ LỰC MÀU): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                              </p>
+                            </div>
+                            <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <p>EARS(TAI):</p>
+                            <div className="pl-4 space-y-1">
+                              <p className="flex items-baseline gap-2">
+                                - ORDINARY HEARING (NGHE THÔNG THƯỜNG): <span className="border-b border-dotted border-black flex-1">..................................................................................</span>
+                              </p>
+                              <p className="flex items-baseline gap-2">
+                                - WHISPER (NGHE NÓI NHỎ): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                              </p>
+                            </div>
+                            <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+                          </div>
+
+                          <div className="flex gap-8">
+                            <p className="flex items-baseline gap-2 flex-1">
+                              NOSE (MŨI): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                            <p className="flex items-baseline gap-2 flex-1">
+                              THROAT (HỌNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                          </div>
+                          <div className="flex gap-8">
+                            <p className="flex items-baseline gap-2 flex-1">
+                              TONGUE (LƯỠI): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                            <p className="flex items-baseline gap-2 flex-1">
+                              TEETH (RĂNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                            </p>
+                          </div>
+                          <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+
+                          <p className="flex items-baseline gap-2">
+                            SKIN DISEASE (BỆNH NGOÀI DA): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                          </p>
+                          <p className="text-right italic pr-10">DOCTOR:....................................................................................</p>
+
+                          <div className="space-y-1">
+                            <p>MOVEMENT SYSTEM (HỆ VẬN ĐỘNG):</p>
+                            <div className="pl-4 space-y-1">
+                              <p className="flex items-baseline gap-2">
+                                - ACHILLES TENDON REFLEX (PHẢN XA GÂN CỐT): <span className="border-b border-dotted border-black flex-1">..................................................................................</span>
+                              </p>
+                              <p className="flex items-baseline gap-2">
+                                - SKELETON (XƯƠNG): <span className="border-b border-dotted border-black flex-1">......................................................................................................</span>
+                              </p>
+                              <div className="flex gap-8">
+                                <p className="flex items-baseline gap-2 flex-1">
+                                  + SKULL (SỌ NÃO): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                </p>
+                                <p className="flex items-baseline gap-2 flex-1">
+                                  ERTEBRAL COLUMN (CỘT SỐNG): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                </p>
+                              </div>
+                              <div className="flex gap-8">
+                                <p className="flex items-baseline gap-2 flex-1">
+                                  + ARMS (TAY): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                </p>
+                                <p className="flex items-baseline gap-2 flex-1">
+                                  LEGS (CHÂN): <span className="border-b border-dotted border-black flex-1">........................</span>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Page 1: TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE */}
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none" style={{ width: '210mm', minHeight: '297mm', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                     {/* Official Header - Using a table-like structure for stable alignment */}
                     <div className="flex justify-between items-start mb-6 w-full">
-                      <div className="w-[180px] text-center">
+                      <div className="w-[180px] text-center" style={{ marginLeft: '-8px' }}>
                         <div className="flex flex-col items-center">
                           <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
                             {customLogo ? (
@@ -1424,24 +1733,37 @@ export default function App() {
                               <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
                             )}
                           </div>
-                          <p className="font-bold text-[11pt] mt-1 uppercase">BỆNH VIỆN ĐHYD</p>
+                          <p className="font-bold text-[11pt] uppercase" style={{ marginTop: '0px' }}>BỆNH VIỆN ĐHYD</p>
                           <p className="text-[10pt]">Số: .........../KHTH</p>
                         </div>
                       </div>
-                      <div className="flex-1 text-center px-4">
-                        <h1 className="text-[16pt] font-bold uppercase leading-tight">TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE CỦA NGƯỜI ĐI LAO ĐỘNG, HỌC TẬP VÀ CÔNG TÁC NƯỚC NGOÀI</h1>
-                        <p className="text-[12pt] font-bold uppercase mt-1">MẪU SONG NGỮ</p>
-                        <p className="italic text-[10pt] mt-1">Bản lưu tại BV ĐHYD</p>
+                      <div className="flex-1 text-center px-4" style={{ marginTop: '-18px' }}>
+                        <h1 
+                          className="font-bold uppercase" 
+                          style={{ 
+                            width: '600px', 
+                            fontSize: '20px', 
+                            lineHeight: '26.6667px', 
+                            marginLeft: '-48px' 
+                          }}
+                        >
+                          TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE CỦA NGƯỜI<br />
+                          ĐI LAO ĐỘNG, HỌC TẬP VÀ CÔNG TÁC NƯỚC NGOÀI
+                        </h1>
+                        <p className="italic text-[10pt] mt-1">(Bản lưu tại BV ĐHYD)</p>
                       </div>
                       <div className="w-[180px]"></div> {/* Spacer to keep title centered */}
                     </div>
 
                     {/* Photo Box 4x6 - Better integrated */}
-                    <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '50mm', left: '15mm' }}>
+                    <div className="absolute border border-black flex items-center justify-center text-center text-[10pt] h-[40mm] w-[30mm]" style={{ top: '50mm', left: '20mm' }}>
                       Ảnh 4x6
                     </div>
 
-                    <div className="flex flex-wrap gap-y-1 text-[12pt] mb-6 w-[560px] ml-[160px]">
+                    <div 
+                      className="flex flex-wrap gap-y-1 text-[12pt] mb-6"
+                      style={{ marginTop: '-1px', marginLeft: '125px', width: '550px' }}
+                    >
                       <DndContext 
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -1482,13 +1804,57 @@ export default function App() {
                         collisionDetection={closestCenter}
                         onDragEnd={handleDragEndRows}
                       >
-                        <table className="w-full border-collapse border border-black text-[9pt] mt-1 pt-0">
+                        <table className="w-full border-collapse border border-black text-[9pt] mt-1 pt-0 table-fixed">
                           <thead>
                             <tr className="bg-slate-50">
-                              <th className="border border-black py-2 px-1 w-8 text-center align-middle">TT</th>
-                              <th className="border border-black py-2 px-1 w-[35%] text-center align-middle">NỘI DUNG KHÁM</th>
-                              <th className="border border-black py-2 px-1 text-center align-middle">KẾT QUẢ</th>
-                              <th className="border border-black py-2 px-1 w-24 text-center align-middle">BS KHÁM KÝ</th>
+                              <th 
+                                className="border border-black py-2 px-1 text-center align-middle relative group"
+                                style={{ width: `${vnTableCols[0]}px` }}
+                              >
+                                TT
+                                {isEditingForm && (
+                                  <div 
+                                    onMouseDown={(e) => handleResizeStart(e, 'col', 0, vnTableCols[0], 'vnSummary')}
+                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                                  />
+                                )}
+                              </th>
+                              <th 
+                                className="border border-black py-2 px-1 text-center align-middle relative group"
+                                style={{ width: `${vnTableCols[1]}px` }}
+                              >
+                                NỘI DUNG KHÁM
+                                {isEditingForm && (
+                                  <div 
+                                    onMouseDown={(e) => handleResizeStart(e, 'col', 1, vnTableCols[1], 'vnSummary')}
+                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                                  />
+                                )}
+                              </th>
+                              <th 
+                                className="border border-black py-2 px-1 text-center align-middle relative group"
+                                style={{ width: `${vnTableCols[2]}px` }}
+                              >
+                                KẾT QUẢ
+                                {isEditingForm && (
+                                  <div 
+                                    onMouseDown={(e) => handleResizeStart(e, 'col', 2, vnTableCols[2], 'vnSummary')}
+                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                                  />
+                                )}
+                              </th>
+                              <th 
+                                className="border border-black py-2 px-1 text-center align-middle relative group"
+                                style={{ width: `${vnTableCols[3]}px` }}
+                              >
+                                BS KHÁM KÝ
+                                {isEditingForm && (
+                                  <div 
+                                    onMouseDown={(e) => handleResizeStart(e, 'col', 3, vnTableCols[3], 'vnSummary')}
+                                    className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                                  />
+                                )}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1503,6 +1869,8 @@ export default function App() {
                                   isEditing={isEditingForm}
                                   onRemove={() => removeTableRow(row.id)}
                                   onUpdate={(updates) => updateTableRow(row.id, updates)}
+                                  height={vnRowHeights[row.id]}
+                                  onResizeRow={(e, height) => handleResizeStart(e, 'row', 0, height, 'vnSummary', row.id)}
                                 />
                               ))}
                             </SortableContext>
@@ -1524,13 +1892,12 @@ export default function App() {
                     <div className="mt-4 text-[12pt] space-y-4">
                       <div>
                         <p className="font-bold -mt-2">KẾT LUẬN: <span className="font-normal italic">Người lao động này đủ/không đủ sức khỏe để làm việc (Nếu không đủ xin nêu lý do)</span></p>
-                        <p className="mt-1 flex items-baseline gap-2">Chi tiết lý do: <span className="border-b border-dotted border-black flex-1 pb-[2px]">......................................................................................................</span></p>
                       </div>
                       
                       {/* Signature Section - Using a table-like structure for right alignment */}
                       <div className="flex justify-end mt-8">
                         <div className="w-[350px] text-center space-y-1">
-                          <p className="italic">BẮC NINH, Ngày {formDate.split('/')[0]} tháng {formDate.split('/')[1]} năm {formDate.split('/')[2]}</p>
+                          <p className="italic">Hà Nội, Ngày {formDate.split('/')[0]} tháng {formDate.split('/')[1]} năm {formDate.split('/')[2]}</p>
                           <p className="font-bold uppercase">KT. TRƯỞNG PHÒNG KHTH</p>
                           <div className="h-24"></div> {/* Signature space */}
                           <p className="font-bold flex items-baseline gap-2 justify-center">BS. <span className="border-b border-dotted border-black w-40 pb-[2px]">&nbsp;</span></p>
@@ -1540,7 +1907,7 @@ export default function App() {
                   </div>
 
                   {/* Page 2: PHIẾU KẾT QUẢ ĐIỆN TIM (ECG) */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                     {/* ECG Header - Table structure for alignment */}
                     <div className="flex justify-between items-start mb-8 w-full">
                       <div className="text-left w-[250px]">
@@ -1581,7 +1948,7 @@ export default function App() {
                         </span>
                         <span className="font-bold whitespace-nowrap ml-4">Giới tính (Sex):</span>
                         <span className="border-b border-dotted border-black w-20 px-2">
-                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................'}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
@@ -1599,11 +1966,33 @@ export default function App() {
                     </div>
 
                     {/* ECG Table */}
-                    <table className="w-full border-collapse border border-black text-[11pt] mb-8">
+                    <table className="w-full border-collapse border border-black text-[11pt] mb-8 table-fixed">
                       <thead>
                         <tr className="bg-slate-50">
-                          <th className="border border-black py-2 px-4 text-center w-1/2 uppercase">DỊCH VỤ KHÁM (Examination services)</th>
-                          <th className="border border-black py-2 px-4 text-center uppercase">KẾT QUẢ (Result)</th>
+                          <th 
+                            className="border border-black py-2 px-4 text-center uppercase relative group"
+                            style={{ width: `${ecgCols[0]}px` }}
+                          >
+                            DỊCH VỤ KHÁM (Examination services)
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 0, ecgCols[0], 'ecg')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
+                          <th 
+                            className="border border-black py-2 px-4 text-center uppercase relative group"
+                            style={{ width: `${ecgCols[1]}px` }}
+                          >
+                            KẾT QUẢ (Result)
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 1, ecgCols[1], 'ecg')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1640,7 +2029,7 @@ export default function App() {
                   </div>
 
                   {/* Page 3: PHIẾU KẾT QUẢ ĐIỆN XRAY (XQUANG) */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                     {/* X-ray Header */}
                     <div className="flex justify-between items-start mb-8 w-full">
                       <div className="text-left w-[250px]">
@@ -1679,7 +2068,7 @@ export default function App() {
                         </span>
                         <span className="font-bold whitespace-nowrap ml-4">Sex (Giới tính):</span>
                         <span className="border-b border-dotted border-black w-24 px-2">
-                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................'}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
@@ -1697,16 +2086,34 @@ export default function App() {
                     </div>
 
                     {/* X-ray Table */}
-                    <table className="w-full border-collapse border border-black text-[11pt] mb-8">
+                    <table className="w-full border-collapse border border-black text-[11pt] mb-8 table-fixed">
                       <thead>
                         <tr className="bg-slate-50">
-                          <th className="border border-black py-3 px-4 text-center w-1/2 uppercase">
+                          <th 
+                            className="border border-black py-3 px-4 text-center uppercase relative group"
+                            style={{ width: `${xrayCols[0]}px` }}
+                          >
                             <p className="font-bold">Examination Services</p>
                             <p className="font-bold">(Dịch vụ Khám)</p>
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 0, xrayCols[0], 'xray')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </th>
-                          <th className="border border-black py-3 px-4 text-center uppercase">
+                          <th 
+                            className="border border-black py-3 px-4 text-center uppercase relative group"
+                            style={{ width: `${xrayCols[1]}px` }}
+                          >
                             <p className="font-bold">Result</p>
                             <p className="font-bold">(Kết quả)</p>
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 1, xrayCols[1], 'xray')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </th>
                         </tr>
                       </thead>
@@ -1746,7 +2153,7 @@ export default function App() {
                   </div>
 
                   {/* Page 4: PHIẾU KẾT QUẢ XÉT NGHIỆM */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always' }}>
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                     {/* Lab Header */}
                     <div className="flex justify-between items-start mb-8 w-full">
                       <div className="text-left w-[250px]">
@@ -1785,7 +2192,7 @@ export default function App() {
                         </span>
                         <span className="font-bold whitespace-nowrap ml-4">Sex (Giới tính):</span>
                         <span className="border-b border-dotted border-black w-24 px-2">
-                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : 'Nam'}
+                          {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].gender : '................'}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2">
@@ -1803,14 +2210,69 @@ export default function App() {
                     </div>
 
                     {/* Lab Table */}
-                    <table className="w-full border-collapse border border-black text-[10pt] mb-8">
+                    <table className="w-full border-collapse border border-black text-[10pt] mb-8 table-fixed">
                       <thead>
                         <tr className="bg-slate-50">
-                          <th className="border border-black py-2 px-1 text-center w-[40px] uppercase font-bold">STT</th>
-                          <th className="border border-black py-2 px-2 text-center uppercase font-bold">TÊN XÉT NGHIỆM</th>
-                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[120px]">KẾT QUẢ</th>
-                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[150px]">GIÁ TRỊ THAM CHIẾU</th>
-                          <th className="border border-black py-2 px-2 text-center uppercase font-bold w-[80px]">ĐƠN VỊ</th>
+                          <th 
+                            className="border border-black py-2 px-1 text-center uppercase font-bold relative group"
+                            style={{ width: `${labCols[0]}px` }}
+                          >
+                            STT
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 0, labCols[0], 'lab')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
+                          <th 
+                            className="border border-black py-2 px-2 text-center uppercase font-bold relative group"
+                            style={{ width: `${labCols[1]}px` }}
+                          >
+                            TÊN XÉT NGHIỆM
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 1, labCols[1], 'lab')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
+                          <th 
+                            className="border border-black py-2 px-2 text-center uppercase font-bold relative group"
+                            style={{ width: `${labCols[2]}px` }}
+                          >
+                            KẾT QUẢ
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 2, labCols[2], 'lab')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
+                          <th 
+                            className="border border-black py-2 px-2 text-center uppercase font-bold relative group"
+                            style={{ width: `${labCols[3]}px` }}
+                          >
+                            GIÁ TRỊ THAM CHIẾU
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 3, labCols[3], 'lab')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
+                          <th 
+                            className="border border-black py-2 px-2 text-center uppercase font-bold relative group"
+                            style={{ width: `${labCols[4]}px` }}
+                          >
+                            ĐƠN VỊ
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 4, labCols[4], 'lab')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1898,25 +2360,55 @@ export default function App() {
                   </div>
 
                   {/* Page 5: FOREIGNER PHYSICAL EXAMINATION FORM (Chinese) */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif' }}>
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
                     <div className="text-center mb-6">
                       <h2 className="text-[20pt] font-bold">外 国 人 体 格 检 查 表</h2>
                       <p className="text-[12pt] font-bold">FOREIGNER PHYSICAL EXAMINATION FORM</p>
                     </div>
 
-                    <table className="w-full border-collapse border border-black text-[10pt]">
+                    <table className="w-full border-collapse border border-black text-[10pt] table-fixed">
                       <tbody>
                         <tr>
-                          <td className="border border-black p-2 w-[80px] text-center">
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols[0]}px` }}
+                          >
                             姓名<br/>Name
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 0, chineseCols[0], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
+                          <td 
+                            className="border border-black p-2 text-center font-bold text-red-600 uppercase relative group"
+                            style={{ width: `${chineseCols[1]}px` }}
+                          >
                             {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].fullName) : ''}
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 1, chineseCols[1], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[60px] text-center">
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols[2]}px` }}
+                          >
                             性别<br/>Sex
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 2, chineseCols[2], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[120px]">
+                          <td 
+                            className="border border-black p-2 relative group"
+                            style={{ width: `${chineseCols[3]}px` }}
+                          >
                             <div className="flex flex-col gap-1">
                               <label className="flex items-center gap-2">
                                 <input type="checkbox" checked={(selectedPersonIndex !== null && results[selectedPersonIndex]?.gender === 'Nam')} readOnly />
@@ -1927,17 +2419,51 @@ export default function App() {
                                 <span>女 Female</span>
                               </label>
                             </div>
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 3, chineseCols[3], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[100px] text-center">
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols[4]}px` }}
+                          >
                             出生日期<br/>Birthday
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 4, chineseCols[4], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[100px] text-center text-red-600">
+                          <td 
+                            className="border border-black p-2 text-center text-red-600 relative group"
+                            style={{ width: `${chineseCols[5]}px` }}
+                          >
                             {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? results[selectedPersonIndex].dateOfBirth : ''}
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 5, chineseCols[5], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td rowSpan={3} className="border border-black p-2 w-[150px] text-center align-middle relative">
+                          <td 
+                            rowSpan={3} 
+                            className="border border-black p-2 text-center align-middle relative group"
+                            style={{ width: `${chineseCols[6]}px` }}
+                          >
                             <div className="border border-dashed border-slate-300 w-full aspect-[3/4] flex items-center justify-center text-slate-400 text-[8pt]">
                               照片<br/>(加盖检查单位印章)<br/><br/>Photo<br/>(Stamped Official Stamp)
                             </div>
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 6, chineseCols[6], 'chinese')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
                         </tr>
                         <tr>
@@ -1953,13 +2479,13 @@ export default function App() {
                             国籍或地区<br/>Nationality<br/>(or Area)
                           </td>
                           <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
-                            VIET NAM
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex] && (results[selectedPersonIndex] as any).nationality) ? (results[selectedPersonIndex] as any).nationality : '................'}
                           </td>
                           <td className="border border-black p-2 text-center">
                             出生地<br/>Birth place
                           </td>
                           <td className="border border-black p-2 text-center font-bold text-red-600 uppercase">
-                            {(selectedPersonIndex !== null && results[selectedPersonIndex]) ? removeAccents(results[selectedPersonIndex].permanentResidence.split(',').pop() || '') : ''}
+                            {(selectedPersonIndex !== null && results[selectedPersonIndex] && (results[selectedPersonIndex] as any).birthPlace) ? (results[selectedPersonIndex] as any).birthPlace : '................'}
                           </td>
                           <td className="border border-black p-2 text-center">
                             血型<br/>Blood type
@@ -2122,22 +2648,79 @@ export default function App() {
                   </div>
 
                   {/* Page 6: FOREIGNER PHYSICAL EXAMINATION FORM - Page 2 (Chinese) */}
-                  <div className="bg-white border border-slate-300 p-[10mm] shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif' }}>
-                    <table className="w-full border-collapse border border-black text-[10pt]">
+                  <div className="bg-white border border-slate-300 shadow-inner relative print:border-0 print:shadow-none mt-4 print:mt-0" style={{ width: '210mm', minHeight: '297mm', pageBreakBefore: 'always', fontFamily: '"Times New Roman", Times, serif', paddingTop: '15mm', paddingBottom: '15mm', paddingLeft: '20mm', paddingRight: '10mm' }}>
+                    <table className="w-full border-collapse border border-black text-[10pt] table-fixed">
                       <tbody>
                         <tr className="h-[80px]">
-                          <td className="border border-black p-2 w-[100px] text-center">
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols2[0]}px` }}
+                          >
                             脊柱<br/>Spine
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 0, chineseCols2[0], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[200px]"></td>
-                          <td className="border border-black p-2 w-[100px] text-center">
+                          <td 
+                            className="border border-black p-2 relative group"
+                            style={{ width: `${chineseCols2[1]}px` }}
+                          >
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 1, chineseCols2[1], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </td>
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols2[2]}px` }}
+                          >
                             四肢<br/>Extremities
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 2, chineseCols2[2], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2 w-[200px]"></td>
-                          <td className="border border-black p-2 w-[100px] text-center">
+                          <td 
+                            className="border border-black p-2 relative group"
+                            style={{ width: `${chineseCols2[3]}px` }}
+                          >
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 3, chineseCols2[3], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </td>
+                          <td 
+                            className="border border-black p-2 text-center relative group"
+                            style={{ width: `${chineseCols2[4]}px` }}
+                          >
                             神经系统<br/>Nervous system
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 4, chineseCols2[4], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
                           </td>
-                          <td className="border border-black p-2"></td>
+                          <td 
+                            className="border border-black p-2 relative group"
+                            style={{ width: `${chineseCols2[5]}px` }}
+                          >
+                            {isEditingForm && (
+                              <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'col', 5, chineseCols2[5], 'chinese2')}
+                                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                              />
+                            )}
+                          </td>
                         </tr>
                         <tr className="h-[80px]">
                           <td className="border border-black p-2 text-center">
@@ -2216,7 +2799,9 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              </section>
+              )}
+            </div>
+          </section>
             ) : (
               <>
                 {/* Left Column: Upload & Preview (Reduced Size) */}
@@ -2975,12 +3560,16 @@ function SortableTableRow({
   row, 
   isEditing, 
   onRemove, 
-  onUpdate 
+  onUpdate,
+  height,
+  onResizeRow
 }: { 
   row: any; 
   isEditing: boolean; 
   onRemove: () => void;
   onUpdate: (updates: any) => void;
+  height?: number;
+  onResizeRow?: (e: React.MouseEvent, height: number) => void;
   key?: React.Key;
 }) {
   const [tempDoctor, setTempDoctor] = useState(row.doctor || "");
@@ -3000,6 +3589,7 @@ function SortableTableRow({
     transition,
     zIndex: isDragging ? 10 : 1,
     opacity: isDragging ? 0.5 : 1,
+    height: height ? `${height}px` : 'auto'
   };
 
   const handleSaveDoctor = () => {
@@ -3016,7 +3606,7 @@ function SortableTableRow({
   }, [row.doctor]);
 
   return (
-    <tr ref={setNodeRef} style={{ ...style, pageBreakInside: 'avoid' }} className={isDragging ? 'bg-blue-50' : ''}>
+    <tr ref={setNodeRef} style={style} className={`group relative ${isDragging ? 'bg-blue-50' : ''}`}>
       <td className="border border-black py-1 px-1 text-center font-bold relative align-middle">
         {isEditing && (
           <div {...attributes} {...listeners} className="absolute left-0 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-blue-500 print:hidden">
@@ -3024,24 +3614,30 @@ function SortableTableRow({
           </div>
         )}
         {row.tt}
+        {isEditing && onResizeRow && (
+          <div 
+            onMouseDown={(e) => onResizeRow(e, height || 40)}
+            className="absolute bottom-0 left-0 w-[180mm] h-1 cursor-row-resize hover:bg-blue-400 z-10 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+          />
+        )}
       </td>
-      <td className="border border-black py-1 px-1 align-middle">
+      <td className="border border-black py-1 px-1 align-middle font-bold whitespace-pre-line">
         {isEditing ? (
-          <input 
-            type="text" 
+          <textarea 
             value={row.label} 
             onChange={(e) => onUpdate({ label: e.target.value })}
-            className="w-full bg-transparent border-b border-blue-200 focus:outline-none focus:border-blue-500"
+            className="w-full bg-transparent border-b border-blue-200 focus:outline-none focus:border-blue-500 font-bold resize-none"
+            rows={row.label.includes('\n') ? 2 : 1}
           />
         ) : row.label}
       </td>
-      <td className="border border-black py-1 px-1 italic text-slate-400 whitespace-pre-line align-middle">
+      <td className={`border border-black py-1 px-1 italic whitespace-pre-line align-middle text-left ${row.isBoldResult ? 'font-bold text-black' : 'text-slate-800'}`}>
         {isEditing ? (
           <input 
             type="text" 
             value={row.result} 
             onChange={(e) => onUpdate({ result: e.target.value })}
-            className="w-full bg-transparent border-b border-blue-200 focus:outline-none focus:border-blue-500"
+            className={`w-full bg-transparent border-b border-blue-200 focus:outline-none focus:border-blue-500 text-left ${row.isBoldResult ? 'font-bold' : ''}`}
           />
         ) : row.result}
       </td>
