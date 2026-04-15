@@ -60,39 +60,103 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  /* 1. Set A4 size and 15mm margins */
+  @page {
+    size: A4;
+    margin: 15mm;
   }
-  #medical-form-to-print, #medical-form-to-print * {
-    visibility: visible;
+
+  /* 2. Hide unnecessary elements */
+  header, 
+  aside, 
+  nav, 
+  button, 
+  select,
+  .no-print,
+  .sticky,
+  .fixed,
+  [role="dialog"],
+  [role="menu"] {
+    display: none !important;
   }
-  #medical-form-to-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 210mm !important;
+
+  /* Specifically hide the modal header/controls */
+  div[class*="sticky"], 
+  div[class*="bg-slate-100/80"] {
+    display: none !important;
+  }
+
+  /* 3. Reset body and main container for print */
+  body {
+    background-color: white !important;
     margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  /* 4. Optimize the form container */
+  #medical-form-to-print {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    visibility: visible !important;
+    position: static !important;
+    overflow: visible !important;
   }
-  #medical-form-to-print table, 
+
+  /* Ensure the inner page container fits A4 */
+  #medical-form-to-print > div {
+    width: 180mm !important; /* 210mm - 15mm*2 margins */
+    min-height: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-after: always;
+  }
+
+  /* 5. Prevent cutting elements */
+  #medical-form-to-print section,
+  #medical-form-to-print .section,
+  #medical-form-to-print div[class*="mt-"],
+  #medical-form-to-print div[class*="space-y-"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 6. Fix table and input styles for print */
+  #medical-form-to-print table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
   #medical-form-to-print th, 
   #medical-form-to-print td {
     border: 0.5pt solid black !important;
-    border-collapse: collapse !important;
-    visibility: visible !important;
   }
+
   #medical-form-to-print input {
     border: none !important;
-    border-bottom: none !important;
     background: transparent !important;
     outline: none !important;
-    box-shadow: none !important;
-    visibility: visible !important;
   }
-  @page {
-    size: A4;
-    margin: 0;
+
+  /* Ensure text colors are black for better printing */
+  * {
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 
