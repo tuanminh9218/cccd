@@ -192,11 +192,11 @@ export default function App() {
     'row-10': 35,
     'row-11': 35
   });
-  const [ecgCols, setEcgCols] = useState([400, 300]);
-  const [xrayCols, setXrayCols] = useState([350, 350]);
-  const [labCols, setLabCols] = useState([40, 250, 120, 150, 80]);
-  const [chineseCols, setChineseCols] = useState([80, 200, 60, 120, 100, 100, 150]);
-  const [chineseCols2, setChineseCols2] = useState([100, 200, 100, 200, 100, 150]);
+  const [ecgCols, setEcgCols] = useState([470, 200]);
+  const [xrayCols, setXrayCols] = useState([350, 300]);
+  const [labCols, setLabCols] = useState([40, 250, 120, 155, 80]);
+  const [chineseCols, setChineseCols] = useState([84, 162, 44, 94, 71, 73, 148]);
+  const [chineseCols2, setChineseCols2] = useState([172, 110, 80, 110, 80, 110]);
 
   const resetTableLayouts = () => {
     setVnTableCols([26, 224.891, 230, 120]);
@@ -210,11 +210,11 @@ export default function App() {
       'row-10': 35,
       'row-11': 35
     });
-    setEcgCols([400, 300]);
-    setXrayCols([350, 350]);
-    setLabCols([40, 250, 120, 150, 80]);
-    setChineseCols([80, 200, 60, 120, 100, 100, 150]);
-    setChineseCols2([100, 200, 100, 200, 100, 150]);
+    setEcgCols([470, 200]);
+    setXrayCols([350, 300]);
+    setLabCols([40, 250, 120, 155, 80]);
+    setChineseCols([84, 162, 44, 94, 71, 73, 148]);
+    setChineseCols2([172, 110, 80, 110, 80, 110]);
   };
 
   const resizingRef = useRef<{
@@ -1541,7 +1541,7 @@ export default function App() {
                               <div className="w-[130px] h-[60px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">MP</div>
                             )}
                           </div>
-                          <p className="font-bold text-[10pt] mt-1 text-blue-800">BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                          <p className="font-bold text-[10pt] mt-1 text-blue-800">BỆNH VIỆN ĐHYD</p>
                           <p className="text-[7pt] text-blue-800 italic">MEDICAL AND PHARMACEUTICAL UNIVERSITY HOSPITAL</p>
                         </div>
                         <div className="text-center">
@@ -1737,14 +1737,15 @@ export default function App() {
                           <p className="text-[10pt]">Số: .........../KHTH</p>
                         </div>
                       </div>
-                      <div className="flex-1 text-center px-4" style={{ marginTop: '-18px' }}>
+                      <div className="flex-1 text-center px-4" style={{ marginTop: '-20px' }}>
                         <h1 
                           className="font-bold uppercase" 
                           style={{ 
                             width: '600px', 
-                            fontSize: '20px', 
+                            fontSize: '19px', 
                             lineHeight: '26.6667px', 
-                            marginLeft: '-48px' 
+                            marginLeft: '-48px',
+                            marginTop: '16px'
                           }}
                         >
                           TÓM TẮT KẾT QUẢ KHÁM SỨC KHỎE CỦA NGƯỜI<br />
@@ -1914,22 +1915,22 @@ export default function App() {
                         <div className="flex items-center gap-2 mb-1">
                           <div className="relative" style={{ transform: `scale(${logoScale}) translate(${logoX}px, ${logoY}px)` }}>
                             {customLogo ? (
-                              <img src={customLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={customLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : selectedLogo ? (
-                              <img src={selectedLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={selectedLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : globalLogo ? (
-                              <img src={globalLogo} alt="Logo" className="max-w-[100px] max-h-[50px] object-contain" referrerPolicy="no-referrer" />
+                              <img src={globalLogo} alt="Logo" style={{ width: '100.9531px', height: '28.9844px' }} className="object-contain" referrerPolicy="no-referrer" />
                             ) : (
                               <div className="w-[80px] h-[40px] bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">MP</div>
                             )}
                           </div>
                         </div>
-                        <p className="font-bold text-[11pt] uppercase">BỆNH VIỆN ĐẠI HỌC Y DƯỢC</p>
+                        <p className="font-bold uppercase" style={{ width: '130px', fontSize: '13.6667px' }}>BỆNH VIỆN ĐHYD</p>
                         <p className="text-[10pt]">Số: .........../KHTH</p>
                       </div>
                       <div className="text-center flex-1">
-                        <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-                        <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <p className="font-bold uppercase" style={{ fontSize: '20px', width: '600px', margin: '0 auto' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold" style={{ fontSize: '20px' }}>Độc lập - Tự do - Hạnh phúc</p>
                         <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
                       </div>
                       <div className="w-[250px]"></div> {/* Spacer */}
@@ -2012,7 +2013,7 @@ export default function App() {
                     </table>
 
                     {/* ECG Footer - Right aligned */}
-                    <div className="mt-8 text-[12pt]">
+                    <div className="text-[12pt]" style={{ marginTop: '20px' }}>
                       <p className="font-bold mb-2">Nhận xét khác của bác sĩ (Doctor's other comments):</p>
                       <p className="border-b border-dotted border-black w-full pb-1">&nbsp;</p>
                       <p className="border-b border-dotted border-black w-full pb-1 mt-2">&nbsp;</p>
@@ -2022,7 +2023,7 @@ export default function App() {
                           <p className="italic">Ngày (Date) {formDate}</p>
                           <p className="font-bold uppercase">BÁC SĨ (DOCTOR)</p>
                           <div className="h-24"></div>
-                          <p className="font-bold">................................................</p>
+                          <p className="font-bold" style={{ marginTop: '36px' }}>................................................</p>
                         </div>
                       </div>
                     </div>
@@ -2046,10 +2047,12 @@ export default function App() {
                             )}
                           </div>
                         </div>
+                        <p className="font-bold text-[11pt] uppercase">BỆNH VIỆN ĐHYD</p>
+                        <p className="text-[10pt]">Số: .........../KHTH</p>
                       </div>
                       <div className="text-center flex-1">
-                        <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-                        <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <p className="font-bold uppercase" style={{ width: '400px', fontSize: '16px', margin: '0 auto' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold" style={{ fontSize: '16px' }}>Độc lập - Tự do - Hạnh phúc</p>
                         <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
                       </div>
                       <div className="w-[250px]"></div> {/* Spacer */}
@@ -2170,10 +2173,12 @@ export default function App() {
                             )}
                           </div>
                         </div>
+                        <p className="font-bold text-[11pt] uppercase">BỆNH VIỆN ĐHYD</p>
+                        <p className="text-[10pt]">Số: .........../KHTH</p>
                       </div>
                       <div className="text-center flex-1">
-                        <p className="font-bold text-[11pt] uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-                        <p className="font-bold text-[10pt]">Độc lập - Tự do - Hạnh phúc</p>
+                        <p className="font-bold uppercase" style={{ width: '400px', fontSize: '16.6667px', margin: '0 auto' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p className="font-bold" style={{ fontSize: '16.3333px' }}>Độc lập - Tự do - Hạnh phúc</p>
                         <div className="w-32 h-[1px] bg-black mx-auto mt-1"></div>
                       </div>
                       <div className="w-[250px]"></div> {/* Spacer */}
@@ -2212,7 +2217,7 @@ export default function App() {
                     {/* Lab Table */}
                     <table className="w-full border-collapse border border-black text-[10pt] mb-8 table-fixed">
                       <thead>
-                        <tr className="bg-slate-50">
+                        <tr className="bg-slate-50" style={{ height: '50px' }}>
                           <th 
                             className="border border-black py-2 px-1 text-center uppercase font-bold relative group"
                             style={{ width: `${labCols[0]}px` }}
