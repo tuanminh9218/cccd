@@ -1,5 +1,4 @@
- 
- @import "tailwindcss";
+@import "tailwindcss";
 
 @theme {
   /* Slate */
@@ -202,6 +201,25 @@
   }
 }
 
+.pdf-mode {
+  /* Reset the outer container for clean capture */
+  background: white !important;
+}
+
+.pdf-mode .print-page {
+  /* Each page must be exactly A4 size for individual capture */
+  width: 210mm !important;
+  height: 297mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  overflow: hidden !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  background: white !important;
+  position: relative !important;
+}
+
 .pdf-mode table,
 .pdf-mode th,
 .pdf-mode td {
@@ -215,4 +233,10 @@
   background: transparent !important;
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Force colors to render in PDF capture */
+.pdf-mode * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
