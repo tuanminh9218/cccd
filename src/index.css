@@ -1,4 +1,5 @@
-@import "tailwindcss";
+ 
+ @import "tailwindcss";
 
 @theme {
   /* Slate */
@@ -60,108 +61,149 @@
 }
 
 @media print {
-  /* 1. Set A4 size and 15mm margins */
+  /* 1. A4 with ZERO margins — each .print-page carries its own padding */
   @page {
-    size: A4;
-    margin: 15mm;
+    size: A4 portrait;
+    margin: 0;
   }
 
-  /* 2. Hide unnecessary elements */
-  header, 
-  aside, 
-  nav, 
-  button, 
-  select,
-  .no-print,
-  .sticky,
-  .fixed,
-  [role="dialog"],
-  [role="menu"] {
+  /* 2. Hide everything that isn't form content */
+  header,
+  footer,
+  aside,
+  nav,
+  .no-print {
     display: none !important;
   }
 
-  /* Specifically hide the modal header/controls */
-  div[class*="sticky"], 
-  div[class*="bg-slate-100/80"] {
-    display: none !important;
-  }
-
-  /* 3. Reset body and main container for print */
+  /* 3. Reset body / root for clean A4 output */
   body {
-    background-color: white !important;
+    background: white !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    width: 210mm !important;
   }
 
+  #root,
+  #root > div {
+    min-height: auto !important;
+    background: white !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 4. Reset main and flatten flex containers */
   main {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    width: 210mm !important;
     max-width: none !important;
-    overflow: visible !important;
   }
 
-  /* 4. Optimize the form container */
+  main > div,
+  main > div > div {
+    display: block !important;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    max-height: none !important;
+  }
+
+  /* 5. Reset the form section wrapper (.print-form-section) */
+  .print-form-section {
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 210mm !important;
+    max-width: none !important;
+  }
+
+  /* 6. Form container */
   #medical-form-to-print {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    visibility: visible !important;
-    position: static !important;
-    overflow: visible !important;
   }
 
-  /* Ensure the inner page container fits A4 */
+  /* 7. Remove gap between pages (space-y-4, mt-4, etc.) */
   #medical-form-to-print > div {
-    width: 180mm !important; /* 210mm - 15mm*2 margins */
-    min-height: auto !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  #medical-form-to-print > div > * + * {
+    margin-top: 0 !important;
+  }
+
+  /* ===== 8. CORE: Each .print-page = exactly one A4 page ===== */
+  .print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    overflow: hidden !important;
+    margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    page-break-after: always;
-  }
+    background: white !important;
+    position: relative !important;
 
-  /* 5. Prevent cutting elements */
-  #medical-form-to-print section,
-  #medical-form-to-print .section,
-  #medical-form-to-print div[class*="mt-"],
-  #medical-form-to-print div[class*="space-y-"] {
+    page-break-after: always !important;
     page-break-inside: avoid !important;
+    break-after: page !important;
     break-inside: avoid !important;
   }
 
-  /* 6. Fix table and input styles for print */
+  .print-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* 9. Table formatting */
   #medical-form-to-print table {
-    width: 100% !important;
     border-collapse: collapse !important;
   }
 
-  #medical-form-to-print th, 
+  #medical-form-to-print th,
   #medical-form-to-print td {
     border: 0.5pt solid black !important;
   }
 
+  /* 10. Input formatting */
   #medical-form-to-print input {
     border: none !important;
     background: transparent !important;
     outline: none !important;
+    box-shadow: none !important;
   }
 
-  /* Ensure text colors are black for better printing */
+  /* 11. Preserve colors exactly as on screen */
   * {
-    color: black !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* 12. Hide resize handles and editing UI */
+  [class*="cursor-col-resize"],
+  [class*="cursor-row-resize"] {
+    display: none !important;
+  }
 }
 
-.pdf-mode table, 
-.pdf-mode th, 
+.pdf-mode table,
+.pdf-mode th,
 .pdf-mode td {
   border: 0.5pt solid black !important;
   border-collapse: collapse !important;
